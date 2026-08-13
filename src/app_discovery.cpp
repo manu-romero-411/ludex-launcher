@@ -4,183 +4,196 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
-#include <optional>
 #include <sstream>
 
-static std::string trim(const std::string& s) {
-    size_t start = s.find_first_not_of(" \t\r\n");
-    if (start == std::string::npos) {
-        return "";
-    }
+#include "ini.h"
 
-    size_t end = s.find_last_not_of(" \t\r\n");
-    return s.substr(start, end - start + 1);
+static std::string trim(const std::string& s) {
+    size_t a = s.find_first_not_of(" \t\r\n");
+    if (a == std::string::npos) return "";
+    size_t b = s.find_last_not_of(" \t\r\n");
+    return s.substr(a, b - a + 1);
 }
 
-std::string displayNameFromStem(std::string stem) {
-    for (char& c : stem) {
-        if (c == '_' || c == '-') {
-            c = ' ';
-        }
+static std::filesystem::path resolveIcon(
+    const Config& cfg,
+    const std::string& icon_key,
+    const std::string& stem
+) {
+    std::error_code ec;
+
+    // 1) Ruta exacta de la clave icon= (si existe de verdad)
+    if (!icon_key.empty()) {
+        std::filesystem::path p = cfg.apps_dir / icon_key;
+        if (std::filesystem::is_regular_file(p, ec)) return p;
     }
 
-    bool capitalize_next = true;
+    // 2) Fallback: app-icons/<stem> con cada extensión soportada
+    for (const auto& ext : cfg.icon_exts) {
+        std::filesystem::path p = cfg.apps_dir / "app-icons" / (stem + ext);
+        if (std::filesystem::is_regular_file(p, ec)) return p;
+    }
 
+    // 3) Nada encontrado: aviso UNA vez en discovery (no N en carga)
+    if (!icon_key.empty()) {
+        std::cerr << "[ludex] icono no encontrado para '" << stem
+                  << "' (buscado: " << icon_key << " y fallbacks)\n";
+    }
+
+    return {};   // icon_path vacío -> no se intenta cargar, sin spam
+}
+
+static std::string displayNameFromStem(std::string stem) {
+    for (char& c : stem) {
+        if (c == '_' || c == '-') c = ' ';
+    }
+    bool cap = true;
     for (char& c : stem) {
         unsigned char uc = static_cast<unsigned char>(c);
-
         if (std::isspace(uc)) {
-            capitalize_next = true;
+            cap = true;
         } else {
-            if (capitalize_next) {
-                c = static_cast<char>(std::toupper(uc));
-                capitalize_next = false;
-            } else {
-                c = static_cast<char>(std::tolower(uc));
-            }
+            c = cap ? (char)std::toupper(uc) : (char)std::tolower(uc);
+            cap = false;
         }
     }
-
     return stem;
 }
 
-std::vector<std::string> makeWebappCommand(
-    const Config& cfg,
-    const std::string& url
-) {
-    std::vector<std::string> cmd;
+static bool parseHexColor(const std::string& s, TileColor& out) {
+    std::string t = trim(s);
+    if (!t.empty() && t[0] == '#') t = t.substr(1);
+    if (t.size() != 6) return false;
 
-    cmd.push_back(cfg.browser_bin);
+    auto hex2 = [](const std::string& v, size_t off) -> int {
+        return (int)std::stoul(v.substr(off, 2), nullptr, 16);
+    };
 
-    for (const auto& arg : cfg.browser_extra_args) {
-        cmd.push_back(arg);
-    }
-
-    cmd.push_back("--app=" + url);
-
-    return cmd;
+    out.r = (unsigned char)hex2(t, 0);
+    out.g = (unsigned char)hex2(t, 2);
+    out.b = (unsigned char)hex2(t, 4);
+    return true;
 }
 
-static std::optional<std::filesystem::path> findIcon(
-    const std::filesystem::path& apps_dir,
-    const std::string& stem,
-    const std::vector<std::string>& icon_exts
-) {
-    const std::filesystem::path icons_dir = apps_dir / "app-icons";
-
-    for (const auto& ext : icon_exts) {
-        std::filesystem::path candidate = icons_dir / (stem + ext);
-
-        std::error_code ec;
-        if (std::filesystem::is_regular_file(candidate, ec)) {
-            return candidate;
-        }
-    }
-
-    return std::nullopt;
+static std::vector<std::string> splitArgs(const std::string& s) {
+    std::vector<std::string> out;
+    std::istringstream iss(s);
+    std::string cur;
+    while (iss >> cur) out.push_back(cur);
+    return out;
 }
 
-static std::vector<App> discoverWebapps(const Config& cfg) {
-    std::vector<App> apps;
-
-    std::error_code ec;
-    if (!std::filesystem::is_directory(cfg.apps_dir, ec)) {
-        std::cerr << "[ludex-launcher] APPS_DIR no existe: "
-                  << cfg.apps_dir << std::endl;
-        return apps;
+/* Punto único de construcción del comando (equivalente a _webapp_cmd). */
+static std::vector<std::string> buildCommand(
+    const std::string& type,
+    const std::string& run,
+    const Config& cfg
+) {
+    if (type == "webapp") {
+        std::vector<std::string> cmd;
+        cmd.push_back(cfg.browser_bin);
+        for (const auto& a : cfg.browser_extra_args) cmd.push_back(a);
+        cmd.push_back("--app=" + run);
+        return cmd;
     }
 
-    std::vector<std::filesystem::path> entries;
-
-    for (const auto& entry :
-         std::filesystem::directory_iterator(cfg.apps_dir, ec)) {
-        if (entry.is_regular_file(ec) && entry.path().extension() == ".webapp") {
-            entries.push_back(entry.path());
-        }
+    if (type == "exec") {
+        return splitArgs(run);
     }
 
-    std::sort(entries.begin(), entries.end());
-
-    for (const auto& path : entries) {
-        std::ifstream f(path);
-        if (!f) {
-            std::cerr << "[ludex-launcher] no se pudo leer "
-                      << path << std::endl;
-            continue;
-        }
-
-        std::stringstream buffer;
-        buffer << f.rdbuf();
-
-        std::string url = trim(buffer.str());
-
-        if (url.empty()) {
-            std::cerr << "[ludex-launcher] " << path
-                      << " está vacío, se ignora" << std::endl;
-            continue;
-        }
-
-        App app;
-        app.name = displayNameFromStem(path.stem().string());
-        app.cmd = makeWebappCommand(cfg, url);
-
-        auto icon = findIcon(cfg.apps_dir, path.stem().string(), cfg.icon_exts);
-        if (icon) {
-            app.icon_path = *icon;
-        }
-
-        apps.push_back(std::move(app));
+    if (type == "steam") {
+        std::vector<std::string> cmd = {"steam"};
+        auto args = splitArgs(run);
+        if (args.empty()) cmd.push_back("-tenfoot");
+        else cmd.insert(cmd.end(), args.begin(), args.end());
+        return cmd;
     }
 
-    std::sort(
-        apps.begin(),
-        apps.end(),
-        [](const App& a, const App& b) {
-            std::string an = a.name;
-            std::string bn = b.name;
+    if (type == "kodi" || type == "heroic" || type == "esde" ||
+        type == "batoes") {
+        std::vector<std::string> cmd = {type};
+        auto args = splitArgs(run);
+        cmd.insert(cmd.end(), args.begin(), args.end());
+        return cmd;
+    }
 
-            std::transform(
-                an.begin(),
-                an.end(),
-                an.begin(),
-                [](unsigned char c) {
-                    return std::tolower(c);
-                }
-            );
+    return splitArgs(run);
+}
 
-            std::transform(
-                bn.begin(),
-                bn.end(),
-                bn.begin(),
-                [](unsigned char c) {
-                    return std::tolower(c);
-                }
-            );
+static App parseWebapp(const std::filesystem::path& path, const Config& cfg) {
+    App app;
+    app.name = displayNameFromStem(path.stem().string());
 
-            return an < bn;
+    std::ifstream f(path);
+    std::stringstream buf;
+    buf << f.rdbuf();
+    std::string content = buf.str();
+
+    if (content.find("[ludex-element]") != std::string::npos) {
+        Ini ini;
+        ini.load(path);
+
+        const std::string S = "ludex-element";
+
+        app.name = ini.get(S, "name", app.name);
+        app.type = ini.get(S, "type", "webapp");
+        app.run = ini.get(S, "run", "");
+
+        // SIEMPRE validar con resolveIcon: si icon= está en el INI
+        // pero el archivo no existe, cae al fallback en vez de
+        // dejar una ruta muerta que spamee el renderer.
+        std::string icon_key = ini.get(S, "icon");
+        app.icon_path = resolveIcon(cfg, icon_key, path.stem().string());
+
+        std::string tt = ini.get(S, "tile_type", "flat");
+        app.tile_type = (tt == "gradient2") ? 1 : 0;
+
+        parseHexColor(ini.get(S, "color1"), app.color1);
+        parseHexColor(ini.get(S, "color2"), app.color2);
+
+        // Tinte opcional del icono (acepta icon_color= o tint= como alias)
+        std::string tint_str = ini.get(S, "icon_color");
+        if (tint_str.empty()) tint_str = ini.get(S, "tint");
+        if (!tint_str.empty() && parseHexColor(tint_str, app.icon_tint)) {
+            app.has_icon_tint = true;
         }
-    );
+    } else {
+        // Compatibilidad con el formato antiguo: solo una URL.
+        std::string url = trim(content);
+        app.type = "webapp";
+        app.run = url;
+        app.icon_path = resolveIcon(cfg, "", path.stem().string());
+    }
 
-    return apps;
+    app.cmd = buildCommand(app.type, app.run, cfg);
+    return app;
 }
 
 std::vector<App> discoverApps(const Config& cfg) {
     std::vector<App> apps;
 
-    for (const auto& native : cfg.native_apps) {
-        App app;
-        app.name = native.name;
-        app.cmd = native.cmd;
-        apps.push_back(std::move(app));
+    std::error_code ec;
+    if (!std::filesystem::is_directory(cfg.apps_dir, ec)) {
+        std::cerr << "[ludex] APPS_DIR no existe: " << cfg.apps_dir << "\n";
+        return apps;
     }
 
-    std::vector<App> webapps = discoverWebapps(cfg);
+    std::vector<std::filesystem::path> entries;
+    for (const auto& e : std::filesystem::directory_iterator(cfg.apps_dir, ec)) {
+        if (e.is_regular_file(ec) && e.path().extension() == ".webapp") {
+            entries.push_back(e.path());
+        }
+    }
 
-    apps.insert(
-        apps.end(),
-        std::make_move_iterator(webapps.begin()),
-        std::make_move_iterator(webapps.end())
-    );
+    std::sort(entries.begin(), entries.end());
+
+    for (const auto& p : entries) {
+        apps.push_back(parseWebapp(p, cfg));
+    }
+
+    std::sort(apps.begin(), apps.end(), [](const App& a, const App& b) {
+        return a.name < b.name;
+    });
 
     return apps;
 }

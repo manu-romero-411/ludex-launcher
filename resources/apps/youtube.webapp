@@ -1,0 +1,9 @@
+[ludex-element]
+name=YouTube
+type=webapp
+run=https://www.youtube.com
+icon=app-icons/youtube.svg
+tile_type=gradient2
+color1=#ff0000
+color2=#000000
+icon_color=#ffffff

@@ -2,18 +2,14 @@
 
 #include <SDL.h>
 
-#include <optional>
 #include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 enum class UiAction {
-    Left,
-    Right,
-    Select,
-    Back,
-    Menu
+    Left, Right, Up, Down,
+    Select, Back, Menu, Guide
 };
 
 struct UiInput {
@@ -39,8 +35,8 @@ public:
 
 private:
     struct AxisState {
-        int last_dir = 0;
-        Uint32 last_ms = 0;
+        int dir_x = 0, dir_y = 0;
+        Uint32 ms_x = 0, ms_y = 0;
     };
 
     struct Slot {

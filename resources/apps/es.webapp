@@ -1,0 +1,7 @@
+[ludex-element]
+name=Retrobox
+type=esde
+run=
+icon=app-icons/retrobox.svg
+tile_type=flat
+color1=#101014

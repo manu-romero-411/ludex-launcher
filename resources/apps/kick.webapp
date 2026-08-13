@@ -1,0 +1,8 @@
+[ludex-element]
+name=Kick
+type=webapp
+run=https://kick.com
+icon=app-icons/kick.svg
+tile_type=flat
+color1=#53FC19
+icon_color=#000000

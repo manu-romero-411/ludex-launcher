@@ -1,0 +1,8 @@
+[ludex-element]
+name=Steam
+type=steam
+run=-tenfoot
+icon=app-icons/steam.svg
+tile_type=flat
+color1=#0e2a4a
+icon_color=#ffffff

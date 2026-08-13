@@ -1,0 +1,8 @@
+[ludex-element]
+name=Twitch
+type=webapp
+run=https://twitch.tv
+icon=app-icons/twitch.svg
+tile_type=flat
+color1=#9146FF
+icon_color=#ffffff

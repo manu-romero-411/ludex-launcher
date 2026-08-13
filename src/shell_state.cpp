@@ -1,70 +1,54 @@
 #include "shell_state.h"
 
 #include <algorithm>
+#include <cmath>
+
+float wrapHalf(float x, int n) {
+    if (n <= 0) return 0.0f;
+    float fn = (float)n;
+    float m = std::fmod(x + fn * 0.5f, fn);
+    if (m < 0.0f) m += fn;
+    return m - fn * 0.5f;
+}
 
 void ShellState::refresh(const Config& cfg) {
     apps = discoverApps(cfg);
-
-    if (apps.empty()) {
-        selected = 0;
-    } else {
-        selected = std::clamp(selected, 0, static_cast<int>(apps.size()) - 1);
-    }
-
-    carousel_offset = static_cast<float>(selected);
+    if (apps.empty()) selected = 0;
+    else selected = std::clamp(selected, 0, (int)apps.size() - 1);
+    offset = (float)selected;
 }
 
-void ShellState::nav(int dx) {
-    if (apps.empty()) {
-        return;
-    }
+void ShellState::nav(int dy) {
+    if (apps.empty()) return;
 
     auto now = std::chrono::steady_clock::now();
-
-    auto elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - last_nav_
-        ).count();
-
-    if (elapsed < NAV_COOLDOWN_MS) {
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - last_nav_).count() < NAV_COOLDOWN_MS) {
         return;
     }
-
     last_nav_ = now;
 
-    int count = static_cast<int>(apps.size());
+    int n = (int)apps.size();
+    selected = ((selected + dy) % n + n) % n;
+}
 
-    selected += dx;
-    selected %= count;
-
-    if (selected < 0) {
-        selected += count;
-    }
+void ShellState::navMenu(int dy) {
+    menu_selected = std::clamp(menu_selected + dy, 0, 2);
 }
 
 void ShellState::update(float dt) {
-    float target = static_cast<float>(selected);
+    int n = (int)apps.size();
+    if (n == 0) return;
 
-    float alpha = CAROUSEL_LERP_RATE * dt;
-    if (alpha > 1.0f) {
-        alpha = 1.0f;
-    }
-
-    carousel_offset += (target - carousel_offset) * alpha;
+    float delta = wrapHalf((float)selected - offset, n);
+    float alpha = std::min(1.0f, LERP_RATE * dt);
+    offset += delta * alpha;
+    float target = menu_open ? 1.0f : 0.0f;
+    menu_anim += (target - menu_anim) * std::min(1.0f, 12.0f * dt);
+    if (std::fabs(target - menu_anim) < 0.001f) menu_anim = target;
 }
 
 const App* ShellState::selectedApp() const {
-    if (apps.empty()) {
-        return nullptr;
-    }
-
-    return &apps[selected];
-}
-
-App* ShellState::selectedApp() {
-    if (apps.empty()) {
-        return nullptr;
-    }
-
+    if (apps.empty()) return nullptr;
     return &apps[selected];
 }

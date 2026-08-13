@@ -13,14 +13,6 @@
                 {
                     "name": "SDL_VIDEODRIVER",
                     "value": "wayland"
-                },
-                {
-                    "name": "TENFOOT_APPS_DIR",
-                    "value": "/var/penguin/juegos/retrobox/resources/apps"
-                },
-                {
-                    "name": "TENFOOT_WALLPAPER_DIR",
-                    "value": "/var/penguin/imagenes/fondos"
                 }
             ],
             "externalConsole": false,

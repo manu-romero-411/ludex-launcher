@@ -184,76 +184,51 @@ void InputManager::handleEvent(const SDL_Event& event) {
 
         case SDL_CONTROLLERBUTTONDOWN: {
             int player = playerForInstance(event.cbutton.which);
-            if (player < 0) {
-                break;
-            }
+            if (player < 0) break;
 
             switch (event.cbutton.button) {
-                case SDL_CONTROLLER_BUTTON_A:
-                    push(player, UiAction::Select);
-                    break;
-
-                case SDL_CONTROLLER_BUTTON_B:
-                    push(player, UiAction::Back);
-                    break;
-
-                case SDL_CONTROLLER_BUTTON_START:
-                    push(player, UiAction::Menu);
-                    break;
-
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                    push(player, UiAction::Left);
-                    break;
-
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                    push(player, UiAction::Right);
-                    break;
-
-                default:
-                    break;
+                case SDL_CONTROLLER_BUTTON_A:  push(player, UiAction::Select); break;
+                case SDL_CONTROLLER_BUTTON_B:  push(player, UiAction::Back);   break;
+                case SDL_CONTROLLER_BUTTON_START: push(player, UiAction::Menu); break;
+                case SDL_CONTROLLER_BUTTON_GUIDE: push(player, UiAction::Guide); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  push(player, UiAction::Left);  break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: push(player, UiAction::Right); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:    push(player, UiAction::Up);    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  push(player, UiAction::Down);  break;
+                default: break;
             }
-
             break;
         }
 
         case SDL_CONTROLLERAXISMOTION: {
-            if (event.caxis.axis != SDL_CONTROLLER_AXIS_LEFTX) {
-                break;
-            }
-
             int player = playerForInstance(event.caxis.which);
-            if (player < 0) {
-                break;
-            }
-
+            if (player < 0) break;
             auto it = instance_to_slot_.find(event.caxis.which);
-            if (it == instance_to_slot_.end()) {
-                break;
-            }
-
-            int slot_id = it->second;
-            AxisState& state = axis_by_slot_[slot_id];
-
+            if (it == instance_to_slot_.end()) break;
+            AxisState& ax = axis_by_slot_[it->second];
             Uint32 now = SDL_GetTicks();
 
-            if (event.caxis.value < -DEADZONE) {
-                if (state.last_dir != -1 ||
-                    now - state.last_ms >= NAV_COOLDOWN_MS) {
-                    push(player, UiAction::Left);
-                    state.last_dir = -1;
-                    state.last_ms = now;
-                }
-            } else if (event.caxis.value > DEADZONE) {
-                if (state.last_dir != 1 ||
-                    now - state.last_ms >= NAV_COOLDOWN_MS) {
-                    push(player, UiAction::Right);
-                    state.last_dir = 1;
-                    state.last_ms = now;
-                }
-            } else {
-                state.last_dir = 0;
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) {
+                if (event.caxis.value < -DEADZONE) {
+                    if (ax.dir_x != -1 || now - ax.ms_x >= NAV_COOLDOWN_MS) {
+                        push(player, UiAction::Left); ax.dir_x = -1; ax.ms_x = now;
+                    }
+                } else if (event.caxis.value > DEADZONE) {
+                    if (ax.dir_x != 1 || now - ax.ms_x >= NAV_COOLDOWN_MS) {
+                        push(player, UiAction::Right); ax.dir_x = 1; ax.ms_x = now;
+                    }
+                } else ax.dir_x = 0;
+            } else if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                if (event.caxis.value < -DEADZONE) {
+                    if (ax.dir_y != -1 || now - ax.ms_y >= NAV_COOLDOWN_MS) {
+                        push(player, UiAction::Up); ax.dir_y = -1; ax.ms_y = now;
+                    }
+                } else if (event.caxis.value > DEADZONE) {
+                    if (ax.dir_y != 1 || now - ax.ms_y >= NAV_COOLDOWN_MS) {
+                        push(player, UiAction::Down); ax.dir_y = 1; ax.ms_y = now;
+                    }
+                } else ax.dir_y = 0;
             }
-
             break;
         }
 

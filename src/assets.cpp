@@ -66,7 +66,10 @@ void loadWallpaper(Renderer& renderer, ShellState& state, const Config& cfg) {
     }
 }
 
-void loadShellAssets(Renderer& renderer, ShellState& state, const Config& cfg) {
+void loadShellAssets(Renderer& renderer, ShellState& state,
+                     const Config& cfg, int screen_h) {
+    int icon_max = (int)(screen_h * cfg.icon_sel_pct * 2.0f);
+
     for (auto& app : state.apps) {
         if (app.icon_texture) {
             renderer.freeTexture(app.icon_texture);
@@ -78,8 +81,8 @@ void loadShellAssets(Renderer& renderer, ShellState& state, const Config& cfg) {
                 app.icon_path,
                 nullptr,
                 nullptr,
-                128   // tope en CPU; la GPU solo suaviza a partir de aquí
-            );
+                icon_max,
+                app.has_icon_tint ? &app.icon_tint : nullptr);
         }
     }
 
