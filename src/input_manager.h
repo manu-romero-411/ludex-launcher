@@ -30,13 +30,27 @@ public:
     bool poll(UiInput& out);
 
     void movePlayer(int from, int to);
+    void update();   // llamar 1 vez por frame: repeticiones continuas
 
     std::vector<std::string> describePlayers() const;
+    struct PlayerStatus {
+        int player;
+        std::string name;
+        bool attached;
+        bool active;  
+    };
+    std::vector<PlayerStatus> playerStatus() const;
 
 private:
     struct AxisState {
         int dir_x = 0, dir_y = 0;
         Uint32 ms_x = 0, ms_y = 0;
+    };
+
+    struct NavHold {
+        bool active = false;
+        Uint32 press_ms = 0;
+        Uint32 last_repeat_ms = 0;
     };
 
     struct Slot {
@@ -48,6 +62,9 @@ private:
 
         SDL_GameController* game_controller = nullptr;
         SDL_Joystick* joystick = nullptr;
+
+        Uint32 last_activity_ms = 0;
+        NavHold hold_up, hold_down, hold_left, hold_right;
     };
 
     int createOrFindSlotForGuid(const std::string& guid);
@@ -74,4 +91,14 @@ private:
 
     static constexpr Sint16 DEADZONE = 16000;
     static constexpr Uint32 NAV_COOLDOWN_MS = 200;
+
+
+
+
+    void stepHold(NavHold& h, bool held, Uint32 now, int player, UiAction a);
+
+    static constexpr Uint32 HOLD_DELAY_MS = 400;        // espera antes de repetir
+    static constexpr Uint32 HOLD_REPEAT_SLOW_MS = 140;  // primera fase
+    static constexpr Uint32 HOLD_REPEAT_FAST_MS = 80;   // acelerado
+
 };

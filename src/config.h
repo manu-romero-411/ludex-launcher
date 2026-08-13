@@ -18,8 +18,9 @@ struct Config {
 
     // Layout: constantes universales de la UI (no dependen del dispositivo),
     // por eso SÍ llevan inicializador. El INI las pisa si están definidas.
-    std::string side = "left";
+    std::string side = "left"; // "up" | "down" | "left" | "right"
     std::string theme = "dark";   // "dark" | "light"
+
     int visible_items = 7;
     float tile_w_pct = 0.20f;
     float tile_sel_w_pct = 0.225f;
@@ -34,6 +35,7 @@ struct Config {
     float edge_fade_pct = 0.22f;     // ancho del fade (fracción de W)
     float edge_fade_alpha = 110.0f;  // intensidad 0..255
     int active_player = 0;
+    bool show_player_indicators = true;
 
     bool load(const std::filesystem::path& path);
     bool save(const std::filesystem::path& path) const;

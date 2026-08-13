@@ -65,6 +65,12 @@ public:
 
         loadShellFonts(cfg, (float)h);
 
+        // Verificar que el atlas se construyó
+        unsigned char* pixels;
+        int width, height;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+        SDL_Log("[ludex] Font atlas: %dx%d, pixels=%p", width, height, (void*)pixels);
+
         ImGui_ImplSDL2_InitForSDLRenderer(window, renderer_);
         ImGui_ImplSDLRenderer2_Init(renderer_);
 

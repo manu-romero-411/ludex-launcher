@@ -10,9 +10,13 @@ bool InputManager::init() {
         return false;
     }
 
-    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    // Fuerza el estado inicial de joysticks
+    SDL_JoystickUpdate();
+    SDL_GameControllerUpdate();
 
     rescanControllers();
+    SDL_Log("[ludex] InputManager: %d mandos detectados en arranque",
+            SDL_NumJoysticks());
 
     return true;
 }
@@ -73,40 +77,42 @@ void InputManager::addDeviceByIndex(int device_index) {
         gc = SDL_GameControllerOpen(device_index);
         if (!gc) {
             SDL_Log("No se pudo abrir controller index=%d: %s",
-                    device_index,
-                    SDL_GetError());
+                    device_index, SDL_GetError());
             return;
         }
-
         js = SDL_GameControllerGetJoystick(gc);
     } else {
         js = SDL_JoystickOpen(device_index);
         if (!js) {
             SDL_Log("No se pudo abrir joystick index=%d: %s",
-                    device_index,
-                    SDL_GetError());
+                    device_index, SDL_GetError());
             return;
         }
     }
 
     SDL_JoystickID instance = SDL_JoystickInstanceID(js);
-
     SDL_JoystickGUID guid = SDL_JoystickGetGUID(js);
-
     char guid_buffer[64] = {};
     SDL_JoystickGetGUIDString(guid, guid_buffer, sizeof(guid_buffer));
 
-    const char* name_c = SDL_JoystickName(js);
+    // Verificar si ya hay un slot ATTACHED con este GUID (dispositivo duplicado)
+    for (const auto& slot : slots_) {
+        if (slot.attached && slot.guid == guid_buffer) {
+            SDL_Log("Dispositivo duplicado ignorado: GUID %s ya está attached",
+                    guid_buffer);
+            if (gc) SDL_GameControllerClose(gc);
+            else if (js) SDL_JoystickClose(js);
+            return;
+        }
+    }
 
+    const char* name_c = SDL_JoystickName(js);
     int slot_id = createOrFindSlotForGuid(guid_buffer);
 
     Slot* slot = slotById(slot_id);
     if (!slot) {
-        if (gc) {
-            SDL_GameControllerClose(gc);
-        } else if (js) {
-            SDL_JoystickClose(js);
-        }
+        if (gc) SDL_GameControllerClose(gc);
+        else if (js) SDL_JoystickClose(js);
         return;
     }
 
@@ -115,9 +121,7 @@ void InputManager::addDeviceByIndex(int device_index) {
     slot->instance = instance;
     slot->attached = true;
 
-    if (name_c) {
-        slot->name = name_c;
-    }
+    if (name_c) slot->name = name_c;
 
     instance_to_slot_[instance] = slot_id;
 
@@ -191,43 +195,7 @@ void InputManager::handleEvent(const SDL_Event& event) {
                 case SDL_CONTROLLER_BUTTON_B:  push(player, UiAction::Back);   break;
                 case SDL_CONTROLLER_BUTTON_START: push(player, UiAction::Menu); break;
                 case SDL_CONTROLLER_BUTTON_GUIDE: push(player, UiAction::Guide); break;
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  push(player, UiAction::Left);  break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: push(player, UiAction::Right); break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP:    push(player, UiAction::Up);    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  push(player, UiAction::Down);  break;
                 default: break;
-            }
-            break;
-        }
-
-        case SDL_CONTROLLERAXISMOTION: {
-            int player = playerForInstance(event.caxis.which);
-            if (player < 0) break;
-            auto it = instance_to_slot_.find(event.caxis.which);
-            if (it == instance_to_slot_.end()) break;
-            AxisState& ax = axis_by_slot_[it->second];
-            Uint32 now = SDL_GetTicks();
-
-            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) {
-                if (event.caxis.value < -DEADZONE) {
-                    if (ax.dir_x != -1 || now - ax.ms_x >= NAV_COOLDOWN_MS) {
-                        push(player, UiAction::Left); ax.dir_x = -1; ax.ms_x = now;
-                    }
-                } else if (event.caxis.value > DEADZONE) {
-                    if (ax.dir_x != 1 || now - ax.ms_x >= NAV_COOLDOWN_MS) {
-                        push(player, UiAction::Right); ax.dir_x = 1; ax.ms_x = now;
-                    }
-                } else ax.dir_x = 0;
-            } else if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-                if (event.caxis.value < -DEADZONE) {
-                    if (ax.dir_y != -1 || now - ax.ms_y >= NAV_COOLDOWN_MS) {
-                        push(player, UiAction::Up); ax.dir_y = -1; ax.ms_y = now;
-                    }
-                } else if (event.caxis.value > DEADZONE) {
-                    if (ax.dir_y != 1 || now - ax.ms_y >= NAV_COOLDOWN_MS) {
-                        push(player, UiAction::Down); ax.dir_y = 1; ax.ms_y = now;
-                    }
-                } else ax.dir_y = 0;
             }
             break;
         }
@@ -350,9 +318,87 @@ const InputManager::Slot* InputManager::slotById(int slot_id) const {
 }
 
 void InputManager::push(int player, UiAction action) {
+    if (player < 0 || player >= (int)order_.size()) return;
+
+    int slot_id = order_[player];
+    Slot* slot = slotById(slot_id);
+    if (slot) {
+        slot->last_activity_ms = SDL_GetTicks();
+    }
+
     UiInput input;
     input.player = player;
     input.action = action;
-
     queue_.push(input);
+}
+
+std::vector<InputManager::PlayerStatus> InputManager::playerStatus() const {
+    std::vector<PlayerStatus> out;
+    Uint32 now = SDL_GetTicks();
+
+    for (int player = 0; player < (int)order_.size(); ++player) {
+        int slot_id = order_[player];
+        const Slot* slot = slotById(slot_id);
+        if (slot && slot->attached) {  // solo mandos conectados
+            bool active = (now - slot->last_activity_ms) < 2000;  // 2 segundos
+            out.push_back({player, slot->name, true, active});
+        }
+    }
+    return out;
+}
+
+void InputManager::update() {
+    Uint32 now = SDL_GetTicks();
+
+    for (auto& slot : slots_) {
+        if (!slot.attached || !slot.game_controller) continue;
+
+        int player = findOrderIndexBySlotId(slot.id);
+        if (player < 0) continue;
+
+        SDL_GameController* gc = slot.game_controller;
+
+        bool up =
+            SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_UP) == SDL_PRESSED ||
+            SDL_GameControllerGetAxis(gc, SDL_CONTROLLER_AXIS_LEFTY) < -DEADZONE;
+        bool down =
+            SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_DOWN) == SDL_PRESSED ||
+            SDL_GameControllerGetAxis(gc, SDL_CONTROLLER_AXIS_LEFTY) > DEADZONE;
+        bool left =
+            SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_LEFT) == SDL_PRESSED ||
+            SDL_GameControllerGetAxis(gc, SDL_CONTROLLER_AXIS_LEFTX) < -DEADZONE;
+        bool right =
+            SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) == SDL_PRESSED ||
+            SDL_GameControllerGetAxis(gc, SDL_CONTROLLER_AXIS_LEFTX) > DEADZONE;
+
+        stepHold(slot.hold_up,    up,    now, player, UiAction::Up);
+        stepHold(slot.hold_down,  down,  now, player, UiAction::Down);
+        stepHold(slot.hold_left,  left,  now, player, UiAction::Left);
+        stepHold(slot.hold_right, right, now, player, UiAction::Right);
+    }
+}
+
+void InputManager::stepHold(NavHold& h, bool held, Uint32 now,
+                            int player, UiAction a) {
+    if (!held) { h.active = false; return; }
+
+    if (!h.active) {
+        h.active = true;
+        h.press_ms = now;
+        h.last_repeat_ms = now;
+        push(player, a);              // primera pulsación inmediata
+        return;
+    }
+
+    Uint32 held_for = now - h.press_ms;
+    if (held_for < HOLD_DELAY_MS) return;
+
+    // acelera: 140 ms los primeros ~0.9 s, luego 80 ms
+    Uint32 interval = (held_for - HOLD_DELAY_MS > 900)
+        ? HOLD_REPEAT_FAST_MS : HOLD_REPEAT_SLOW_MS;
+
+    if (now - h.last_repeat_ms >= interval) {
+        h.last_repeat_ms = now;
+        push(player, a);
+    }
 }

@@ -1,0 +1,6 @@
+[backend]
+name=steam
+display_name=Steam Big Picture
+exec_start=steam -tenfoot %ARGS%
+exec_end=
+url_format=

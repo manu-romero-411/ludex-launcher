@@ -129,7 +129,10 @@ bool Config::load(const std::filesystem::path& path) {
     font_bold    = ini.get(S, "font_bold",    defaults::fontBold());
 
     // Layout
-    side           = ini.get(S, "side", side);
+    side = ini.get(S, "side", side);
+    if (side != "left" && side != "right" && side != "top" && side != "bottom") {
+        side = "left";
+    }
     visible_items  = ini.getInt  (S, "visible_items",  visible_items);
     tile_w_pct     = ini.getFloat(S, "tile_w_pct",     tile_w_pct);
     tile_sel_w_pct = ini.getFloat(S, "tile_sel_w_pct", tile_sel_w_pct);
@@ -142,6 +145,7 @@ bool Config::load(const std::filesystem::path& path) {
     font_tile_pct  = ini.getFloat(S, "font_tile_pct",  font_tile_pct);
     edge_fade_pct   = ini.getFloat(S, "edge_fade_pct",   edge_fade_pct);
     edge_fade_alpha = ini.getFloat(S, "edge_fade_alpha", edge_fade_alpha);
+    show_player_indicators = ini.getInt(S, "show_player_indicators", show_player_indicators) != 0;
     theme = ini.get(S, "theme", theme);          // load
 
     if (visible_items < 3) visible_items = 3;
@@ -201,6 +205,7 @@ bool Config::save(const std::filesystem::path& path) const {
     ini.set(S, "edge_fade_alpha", std::to_string(edge_fade_alpha));
     ini.set(S, "active_player",       std::to_string(active_player));
     ini.set(S, "theme", theme);                  // save
+    ini.set(S, "show_player_indicators", show_player_indicators ? "1" : "0");
     return ini.save(path);
 }
 

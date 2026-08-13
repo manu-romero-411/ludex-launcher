@@ -20,14 +20,6 @@ void ShellState::refresh(const Config& cfg) {
 
 void ShellState::nav(int dy) {
     if (apps.empty()) return;
-
-    auto now = std::chrono::steady_clock::now();
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - last_nav_).count() < NAV_COOLDOWN_MS) {
-        return;
-    }
-    last_nav_ = now;
-
     int n = (int)apps.size();
     selected = ((selected + dy) % n + n) % n;
 }

@@ -20,7 +20,11 @@ int main(int argc, char** argv) {
 
     std::setlocale(LC_ALL, "");
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+    // Hints DEBEN estar antes de SDL_Init
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
+
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) != 0) {
         std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
         return 1;
     }
@@ -100,6 +104,7 @@ int main(int argc, char** argv) {
     actions.poweroff = [&] { launchApp({"systemctl", "poweroff"}, LaunchHooks{}); };
     actions.reboot   = [&] { launchApp({"systemctl", "reboot"},   LaunchHooks{}); };
     actions.suspend  = [&] { launchApp({"systemctl", "suspend"},  LaunchHooks{}); };
+    actions.player_status = [&] { return input.playerStatus(); };
 
     auto handleAction = [&](UiAction a) {
         if (shell.show_settings || shell.show_power) {
@@ -107,13 +112,21 @@ int main(int argc, char** argv) {
             return;
         }
         switch (a) {
-            case UiAction::Up:
             case UiAction::Left:
-                if (shell.menu_open) shell.navMenu(-1); else shell.nav(-1);
+                if (shell.menu_open) shell.navMenu(-1);
+                else if (cfg.side == "top" || cfg.side == "bottom") shell.nav(-1);
+                break;
+            case UiAction::Right:
+                if (shell.menu_open) shell.navMenu(1);
+                else if (cfg.side == "top" || cfg.side == "bottom") shell.nav(1);
+                break;
+            case UiAction::Up:
+                if (shell.menu_open) shell.navMenu(-1);
+                else if (cfg.side == "left" || cfg.side == "right") shell.nav(-1);
                 break;
             case UiAction::Down:
-            case UiAction::Right:
-                if (shell.menu_open) shell.navMenu(1); else shell.nav(1);
+                if (shell.menu_open) shell.navMenu(1);
+                else if (cfg.side == "left" || cfg.side == "right") shell.nav(1);
                 break;
             case UiAction::Select:
                 if (shell.menu_open) {
@@ -132,7 +145,6 @@ int main(int argc, char** argv) {
                 break;
             case UiAction::Back:
                 if (shell.menu_open) shell.menu_open = false;
-                else running = false;
                 break;
             case UiAction::Guide:
                 shell.menu_open = !shell.menu_open;
@@ -161,7 +173,10 @@ int main(int argc, char** argv) {
                 running = false;
                 continue;
             }
-
+            if (event.type == SDL_WINDOWEVENT &&
+                event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                running = false;
+            }
             // ---- TECLADO ----
             if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
@@ -171,7 +186,10 @@ int main(int argc, char** argv) {
                     case SDLK_RIGHT: handleAction(UiAction::Right); break;
                     case SDLK_RETURN:
                     case SDLK_SPACE: handleAction(UiAction::Select); break;
-                    case SDLK_ESCAPE: handleAction(UiAction::Back); break;
+                    case SDLK_ESCAPE:
+                        if (shell.show_settings) shell.show_settings = false;
+                        else if (shell.menu_open) shell.menu_open = false;
+                        break;
                     case SDLK_F1:
                     case SDLK_HOME:  handleAction(UiAction::Guide); break;
                     case SDLK_F5:
@@ -190,6 +208,8 @@ int main(int argc, char** argv) {
 
         // ---- MANDO (UiInput desde InputManager) ----
         UiInput ui;
+        input.update();
+
         while (input.poll(ui)) {
             if (ui.player != cfg.active_player) continue;
             handleAction(ui.action);
