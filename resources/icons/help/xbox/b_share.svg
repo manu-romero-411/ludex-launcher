@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Capa_1"
+   x="0px"
+   y="0px"
+   width="14.999px"
+   height="12.113px"
+   viewBox="0 0 14.999 12.113"
+   enable-background="new 0 0 14.999 12.113"
+   xml:space="preserve"
+   sodipodi:docname="Xbox_Back_button.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs13" /><sodipodi:namedview
+   id="namedview13"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   showguides="true"
+   inkscape:zoom="44.949412"
+   inkscape:cx="6.518439"
+   inkscape:cy="6.518439"
+   inkscape:window-width="1920"
+   inkscape:window-height="978"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Capa_1"><sodipodi:guide
+     position="0,6.056"
+     orientation="0,-1"
+     id="guide16"
+     inkscape:locked="false" /><sodipodi:guide
+     position="7.4995002,12.113"
+     orientation="1,0"
+     id="guide17"
+     inkscape:locked="false" /></sodipodi:namedview>
+<g
+   id="g13">
+	<g
+   id="g11">
+		
+			<linearGradient
+   id="SVGID_1_"
+   gradientUnits="userSpaceOnUse"
+   x1="-900.7495"
+   y1="0"
+   x2="-900.7495"
+   y2="10.8416"
+   gradientTransform="matrix(-1 0 0 1 -893.25 0)">
+			<stop
+   offset="0"
+   style="stop-color:#5B5B5F"
+   id="stop1" />
+			<stop
+   offset="0.0231"
+   style="stop-color:#59595D"
+   id="stop2" />
+			<stop
+   offset="0.4507"
+   style="stop-color:#333335"
+   id="stop3" />
+			<stop
+   offset="0.7912"
+   style="stop-color:#1C1C1D"
+   id="stop4" />
+			<stop
+   offset="1"
+   style="stop-color:#141414"
+   id="stop5" />
+		</linearGradient>
+		<path
+   fill="url(#SVGID_1_)"
+   d="M0,6.057c0,3.346,2.711,6.057,6.057,6.057h2.886c3.346,0,6.057-2.711,6.057-6.057l0,0    C14.999,2.713,12.288,0,8.942,0H6.057C2.711,0,0,2.713,0,6.057L0,6.057z"
+   id="path5" />
+		
+			<linearGradient
+   id="SVGID_2_"
+   gradientUnits="userSpaceOnUse"
+   x1="-900.7495"
+   y1="0"
+   x2="-900.7495"
+   y2="12.1133"
+   gradientTransform="matrix(-1 0 0 1 -893.25 0)">
+			<stop
+   offset="0"
+   style="stop-color:#5B5B5F"
+   id="stop6" />
+			<stop
+   offset="0.0807"
+   style="stop-color:#505053"
+   id="stop7" />
+			<stop
+   offset="0.3078"
+   style="stop-color:#363638"
+   id="stop8" />
+			<stop
+   offset="0.5369"
+   style="stop-color:#232324"
+   id="stop9" />
+			<stop
+   offset="0.767"
+   style="stop-color:#181818"
+   id="stop10" />
+			<stop
+   offset="1"
+   style="stop-color:#141414"
+   id="stop11" />
+		</linearGradient>
+		<path
+   fill="url(#SVGID_2_)"
+   d="M6.057,1.201h2.886c2.678,0,4.855,2.178,4.855,4.855c0,2.678-2.178,4.856-4.855,4.856H6.057    c-2.678,0-4.855-2.178-4.855-4.856C1.201,3.379,3.379,1.201,6.057,1.201 M6.057,0C2.711,0,0,2.713,0,6.057    c0,3.346,2.711,6.057,6.057,6.057h2.886c3.346,0,6.057-2.711,6.057-6.057C14.999,2.713,12.288,0,8.942,0H6.057L6.057,0z"
+   id="path11" />
+	</g>
+	
+</g>
+<path
+   id="rect13"
+   style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#eaeaea;paint-order:markers fill stroke;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+   d="m 3.4590763,3.1580193 v 3.9609375 h 1.5410156 v -0.5 H 3.9590763 V 3.6580193 H 8.9649357 V 4.388488 h 0.5 V 3.1580193 Z M 5.5000919,4.888488 V 8.8494255 H 11.505952 V 4.888488 Z m 0.5,0.5 H 11.005952 V 8.3494255 H 6.0000919 Z" /><g
+   id="rect13-6"
+   style="opacity:1" /></svg>

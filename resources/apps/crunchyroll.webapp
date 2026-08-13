@@ -1,6 +1,6 @@
 [ludex-element]
 name=Crunchyroll
-type=webapp
+backend=chrome
 run=https://crunchyroll.com
 icon=app-icons/crunchyroll.svg
 tile_type=flat

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "backends.h"
 
 #include "ini.h"
 
@@ -83,46 +84,14 @@ static std::vector<std::string> splitArgs(const std::string& s) {
     return out;
 }
 
-/* Punto único de construcción del comando (equivalente a _webapp_cmd). */
-static std::vector<std::string> buildCommand(
-    const std::string& type,
-    const std::string& run,
-    const Config& cfg
-) {
-    if (type == "webapp") {
-        std::vector<std::string> cmd;
-        cmd.push_back(cfg.browser_bin);
-        for (const auto& a : cfg.browser_extra_args) cmd.push_back(a);
-        cmd.push_back("--app=" + run);
-        return cmd;
-    }
 
-    if (type == "exec") {
-        return splitArgs(run);
-    }
-
-    if (type == "steam") {
-        std::vector<std::string> cmd = {"steam"};
-        auto args = splitArgs(run);
-        if (args.empty()) cmd.push_back("-tenfoot");
-        else cmd.insert(cmd.end(), args.begin(), args.end());
-        return cmd;
-    }
-
-    if (type == "kodi" || type == "heroic" || type == "esde" ||
-        type == "batoes") {
-        std::vector<std::string> cmd = {type};
-        auto args = splitArgs(run);
-        cmd.insert(cmd.end(), args.begin(), args.end());
-        return cmd;
-    }
-
-    return splitArgs(run);
-}
-
-static App parseWebapp(const std::filesystem::path& path, const Config& cfg) {
+static App parseWebapp(const std::filesystem::path& path, const Config& cfg,
+                       const BackendRegistry& backends, bool& ok)
+{
+    ok = true;
     App app;
     app.name = displayNameFromStem(path.stem().string());
+    app.webapp_path = path;
 
     std::ifstream f(path);
     std::stringstream buf;
@@ -132,16 +101,15 @@ static App parseWebapp(const std::filesystem::path& path, const Config& cfg) {
     if (content.find("[ludex-element]") != std::string::npos) {
         Ini ini;
         ini.load(path);
-
         const std::string S = "ludex-element";
 
         app.name = ini.get(S, "name", app.name);
-        app.type = ini.get(S, "type", "webapp");
+
+        // backend= (preferida) > app= > type= (legacy)
+        app.backend = ini.get(S, "backend", "");
+
         app.run = ini.get(S, "run", "");
 
-        // SIEMPRE validar con resolveIcon: si icon= está en el INI
-        // pero el archivo no existe, cae al fallback en vez de
-        // dejar una ruta muerta que spamee el renderer.
         std::string icon_key = ini.get(S, "icon");
         app.icon_path = resolveIcon(cfg, icon_key, path.stem().string());
 
@@ -151,25 +119,30 @@ static App parseWebapp(const std::filesystem::path& path, const Config& cfg) {
         parseHexColor(ini.get(S, "color1"), app.color1);
         parseHexColor(ini.get(S, "color2"), app.color2);
 
-        // Tinte opcional del icono (acepta icon_color= o tint= como alias)
         std::string tint_str = ini.get(S, "icon_color");
         if (tint_str.empty()) tint_str = ini.get(S, "tint");
         if (!tint_str.empty() && parseHexColor(tint_str, app.icon_tint)) {
             app.has_icon_tint = true;
         }
     } else {
-        // Compatibilidad con el formato antiguo: solo una URL.
-        std::string url = trim(content);
-        app.type = "webapp";
-        app.run = url;
+        // Formato antiguo: solo una URL -> backend "webapp"
+        app.backend = "webapp";
+        app.run = trim(content);
         app.icon_path = resolveIcon(cfg, "", path.stem().string());
     }
 
-    app.cmd = buildCommand(app.type, app.run, cfg);
+    // Si el backend no existe, la app NO aparece en el menú
+    if (app.backend.empty() || !backends.find(app.backend)) {
+        std::cerr << "[ludex] '" << path.filename().string()
+                  << "' referencia el backend '" << app.backend
+                  << "' que no está definido; se excluye del menú\n";
+        ok = false;
+    }
+
     return app;
 }
 
-std::vector<App> discoverApps(const Config& cfg) {
+std::vector<App> discoverApps(const Config& cfg, const BackendRegistry& backends) {
     std::vector<App> apps;
 
     std::error_code ec;
@@ -184,11 +157,12 @@ std::vector<App> discoverApps(const Config& cfg) {
             entries.push_back(e.path());
         }
     }
-
     std::sort(entries.begin(), entries.end());
 
     for (const auto& p : entries) {
-        apps.push_back(parseWebapp(p, cfg));
+        bool ok = false;
+        App app = parseWebapp(p, cfg, backends, ok);
+        if (ok) apps.push_back(std::move(app));
     }
 
     std::sort(apps.begin(), apps.end(), [](const App& a, const App& b) {

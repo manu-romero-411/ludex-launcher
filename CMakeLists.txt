@@ -64,6 +64,7 @@ add_executable(ludex-launcher
     src/renderer_vulkan.cpp
     src/assets.cpp
     src/ini.cpp
+    src/backends.cpp
 )
 
 target_include_directories(ludex-launcher PRIVATE

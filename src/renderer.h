@@ -34,7 +34,9 @@ public:
         int* out_w = nullptr,
         int* out_h = nullptr,
         int max_dim = 0,
-        const TileColor* tint = nullptr
+        const TileColor* tint = nullptr,
+        int cover_w = 0,
+        int cover_h = 0
     ) = 0;
 
     virtual void freeTexture(void* texture) = 0;

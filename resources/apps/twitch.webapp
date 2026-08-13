@@ -1,6 +1,6 @@
 [ludex-element]
 name=Twitch
-type=webapp
+backend=chrome
 run=https://twitch.tv
 icon=app-icons/twitch.svg
 tile_type=flat

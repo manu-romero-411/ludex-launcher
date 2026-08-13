@@ -1,7 +1,6 @@
 [ludex-element]
 name=Steam
-type=steam
-run=-tenfoot
+backend=steam
 icon=app-icons/steam.svg
 tile_type=flat
 color1=#0e2a4a

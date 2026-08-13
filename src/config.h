@@ -36,6 +36,10 @@ struct Config {
     float edge_fade_alpha = 110.0f;  // intensidad 0..255
     int active_player = 0;
     bool show_player_indicators = true;
+    float wallpaper_interval = 60.0f;      // segundos entre cambios
+    bool  wallpaper_ken_burns = true;      // activar/desactivar efecto
+    float wallpaper_ken_burns_zoom = 1.12f; // escala máxima (1.12 = +12%)
+    float wallpaper_fade_duration = 2.0f; // segundos de crossfade
 
     bool load(const std::filesystem::path& path);
     bool save(const std::filesystem::path& path) const;

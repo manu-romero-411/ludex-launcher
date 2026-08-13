@@ -58,9 +58,6 @@ public:
 
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
         ImGui::StyleColorsDark();
 
         loadShellFonts(cfg, (float)h);
@@ -120,7 +117,9 @@ public:
         int* out_w,
         int* out_h,
         int max_dim,
-        const TileColor* tint    // <-- AÑADIDO
+        const TileColor* tint,
+        int cover_w,
+        int cover_h
     ) override {
         SDL_Surface* surface = nullptr;
 
@@ -150,45 +149,58 @@ public:
         SDL_FreeSurface(surface);
         if (!rgba) return nullptr;
 
-        // <-- NUEVO: aplicar tinte ANTES del resize para que sea nítido
         if (tint) applyTint(rgba, *tint);
 
-        SDL_Surface* final_surf = rgba;
-
-        if (max_dim > 0 && (rgba->w > max_dim || rgba->h > max_dim)) {
-            float s = (float)max_dim / (float)std::max(rgba->w, rgba->h);
-            int dw = std::max(1, (int)std::lround(rgba->w * s));
-            int dh = std::max(1, (int)std::lround(rgba->h * s));
-
+        // Resize de alta calidad que sustituye `rgba` con seguridad
+        // (libera el antiguo solo si el nuevo se creó bien).
+        auto resizeTo = [&](int dw, int dh) {
+            if (dw == rgba->w && dh == rgba->h) return;
             SDL_Surface* resized = SDL_CreateRGBSurfaceWithFormat(
                 0, dw, dh, 32, SDL_PIXELFORMAT_RGBA32);
+            if (!resized) return;
 
-            if (resized) {
-                bool ok = stbir_resize_uint8_srgb(
-                    (const unsigned char*)rgba->pixels,
-                    rgba->w, rgba->h, rgba->pitch,
-                    (unsigned char*)resized->pixels,
-                    dw, dh, resized->pitch,
-                    STBIR_RGBA);
-                if (ok) {
-                    SDL_FreeSurface(rgba);
-                    final_surf = resized;
-                } else {
-                    SDL_FreeSurface(resized);
-                }
+            bool ok = stbir_resize_uint8_srgb(
+                (const unsigned char*)rgba->pixels,
+                rgba->w, rgba->h, rgba->pitch,
+                (unsigned char*)resized->pixels,
+                dw, dh, resized->pitch,
+                STBIR_RGBA);
+
+            if (ok) {
+                SDL_FreeSurface(rgba);
+                rgba = resized;
+            } else {
+                SDL_FreeSurface(resized);
             }
+        };
+
+        // 1) Cover a pantalla (wallpapers): ni un píxel de más en VRAM
+        if (cover_w > 0 && cover_h > 0) {
+            float s = std::max((float)cover_w / rgba->w,
+                               (float)cover_h / rgba->h);
+            resizeTo(std::max(1, (int)std::lround(rgba->w * s)),
+                     std::max(1, (int)std::lround(rgba->h * s)));
         }
 
-        SDL_Texture* texture =
-            SDL_CreateTextureFromSurface(renderer_, final_surf);
+        // 2) Tope por dimensión máxima (iconos)
+        if (max_dim > 0 && (rgba->w > max_dim || rgba->h > max_dim)) {
+            float s = (float)max_dim / (float)std::max(rgba->w, rgba->h);
+            resizeTo(std::max(1, (int)std::lround(rgba->w * s)),
+                     std::max(1, (int)std::lround(rgba->h * s)));
+        }
+
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, rgba);
         if (texture) {
             SDL_SetTextureScaleMode(texture, SDL_ScaleModeLinear);
+        } else {
+            SDL_Log("SDL_CreateTextureFromSurface falló para %s: %s",
+                    path.string().c_str(), SDL_GetError());
         }
 
-        if (out_w) *out_w = final_surf->w;
-        if (out_h) *out_h = final_surf->h;
+        if (out_w) *out_w = rgba->w;
+        if (out_h) *out_h = rgba->h;
 
-        SDL_FreeSurface(final_surf);
+        SDL_FreeSurface(rgba);   // la textura ya está en GPU
         return texture;
     }
 

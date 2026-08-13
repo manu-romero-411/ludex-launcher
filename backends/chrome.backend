@@ -1,6 +1,0 @@
-[backend]
-name=chrome
-display_name=Google Chrome
-exec_start=/usr/bin/google-chrome --new-window --app=%URL%
-exec_end=
-url_format=%URL%

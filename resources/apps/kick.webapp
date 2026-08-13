@@ -1,6 +1,6 @@
 [ludex-element]
 name=Kick
-type=webapp
+backend=chrome
 run=https://kick.com
 icon=app-icons/kick.svg
 tile_type=flat

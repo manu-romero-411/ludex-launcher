@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Capa_1"
+   x="0px"
+   y="0px"
+   width="14.951px"
+   height="12.075px"
+   viewBox="0 0 14.951 12.075"
+   enable-background="new 0 0 14.951 12.075"
+   xml:space="preserve"
+   sodipodi:docname="Xbox_Start_button.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs13" /><sodipodi:namedview
+   id="namedview13"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   showguides="true"
+   inkscape:zoom="31.884058"
+   inkscape:cx="1.3172727"
+   inkscape:cy="1.3486363"
+   inkscape:window-width="1920"
+   inkscape:window-height="978"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="g12"><sodipodi:guide
+     position="0,6.0369999"
+     orientation="0,-1"
+     id="guide13"
+     inkscape:locked="false" /><sodipodi:guide
+     position="7.4755,6.0375"
+     orientation="1,0"
+     id="guide14"
+     inkscape:locked="false" /><sodipodi:guide
+     position="8.2594935,5.5897345"
+     orientation="0,-1"
+     id="guide15"
+     inkscape:locked="false" /><sodipodi:guide
+     position="8.1009594,6.4842655"
+     orientation="0,-1"
+     id="guide16"
+     inkscape:locked="false" /></sodipodi:namedview>
+<g
+   id="g13">
+	<g
+   id="g11">
+		<linearGradient
+   id="SVGID_1_"
+   gradientUnits="userSpaceOnUse"
+   x1="7.4756"
+   y1="0"
+   x2="7.4756"
+   y2="10.8071">
+			<stop
+   offset="0"
+   style="stop-color:#5B5B5F"
+   id="stop1" />
+			<stop
+   offset="0.0231"
+   style="stop-color:#59595D"
+   id="stop2" />
+			<stop
+   offset="0.4507"
+   style="stop-color:#333335"
+   id="stop3" />
+			<stop
+   offset="0.7912"
+   style="stop-color:#1C1C1D"
+   id="stop4" />
+			<stop
+   offset="1"
+   style="stop-color:#141414"
+   id="stop5" />
+		</linearGradient>
+		<path
+   fill="url(#SVGID_1_)"
+   d="M14.951,6.038c0,3.334-2.702,6.037-6.037,6.037H6.037C2.702,12.075,0,9.372,0,6.038l0,0    C0,2.704,2.702,0,6.037,0h2.877C12.249,0,14.951,2.704,14.951,6.038L14.951,6.038z"
+   id="path5" />
+		<linearGradient
+   id="SVGID_2_"
+   gradientUnits="userSpaceOnUse"
+   x1="7.4756"
+   y1="0"
+   x2="7.4756"
+   y2="12.0747">
+			<stop
+   offset="0"
+   style="stop-color:#5B5B5F"
+   id="stop6" />
+			<stop
+   offset="0.0807"
+   style="stop-color:#505053"
+   id="stop7" />
+			<stop
+   offset="0.3078"
+   style="stop-color:#363638"
+   id="stop8" />
+			<stop
+   offset="0.5369"
+   style="stop-color:#232324"
+   id="stop9" />
+			<stop
+   offset="0.767"
+   style="stop-color:#181818"
+   id="stop10" />
+			<stop
+   offset="1"
+   style="stop-color:#141414"
+   id="stop11" />
+		</linearGradient>
+		<path
+   fill="url(#SVGID_2_)"
+   d="M8.914,1.197c2.669,0,4.84,2.171,4.84,4.84s-2.171,4.84-4.84,4.84H6.037    c-2.669,0-4.84-2.171-4.84-4.84s2.171-4.84,4.84-4.84H8.914 M8.914,0H6.037C2.702,0,0,2.704,0,6.038    c0,3.334,2.702,6.037,6.037,6.037h2.877c3.335,0,6.037-2.703,6.037-6.037C14.951,2.704,12.249,0,8.914,0L8.914,0z"
+   id="path11" />
+	</g>
+	<g
+   id="g12"
+   transform="translate(-7.6906894,-3.7296883)">
+		<path
+   id="rect13"
+   style="opacity:1;fill:#eaeaea;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;paint-order:markers fill stroke;fill-opacity:1"
+   d="M 4.3465937,3.8036249 V 4.6981561 H 10.604406 V 3.8036249 Z m 0,1.7871094 v 0.894531 h 6.2578123 v -0.894531 z m 0,1.789062 v 0.892579 h 6.2578123 v -0.892579 z"
+   transform="translate(7.6906894,3.7296883)" />
+	</g>
+</g>
+</svg>

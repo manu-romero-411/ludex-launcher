@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <fstream>    // <-- AÑADIR
 
 bool InputManager::init() {
     if (SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -401,4 +402,35 @@ void InputManager::stepHold(NavHold& h, bool held, Uint32 now,
         h.last_repeat_ms = now;
         push(player, a);
     }
+}
+
+std::filesystem::path InputManager::writeControllersConfig(
+    const std::filesystem::path& dir) const
+{
+    std::error_code ec;
+    if (!dir.empty()) std::filesystem::create_directories(dir, ec);
+
+    std::filesystem::path file = dir / "ludex-controllers.cfg";
+    std::ofstream f(file);
+    if (!f) return {};
+
+    for (int player = 0; player < (int)order_.size(); ++player) {
+        const Slot* slot = slotById(order_[player]);
+        if (!slot || !slot->attached) continue;
+
+        f << "[player" << player << "]\n";
+        f << "name=" << slot->name << "\n";
+        f << "guid=" << slot->guid << "\n";
+
+        if (slot->game_controller) {
+            char* m = SDL_GameControllerMapping(slot->game_controller);
+            if (m) {
+                f << "sdl_mapping=" << m << "\n";
+                SDL_free(m);
+            }
+        }
+        f << "\n";
+    }
+
+    return file;
 }

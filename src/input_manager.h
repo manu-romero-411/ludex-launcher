@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 
+#include <filesystem>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -40,7 +41,8 @@ public:
         bool active;  
     };
     std::vector<PlayerStatus> playerStatus() const;
-
+    std::filesystem::path writeControllersConfig(
+        const std::filesystem::path& dir) const;
 private:
     struct AxisState {
         int dir_x = 0, dir_y = 0;

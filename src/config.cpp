@@ -80,17 +80,6 @@ static std::string fontBold() {
     return "/usr/share/fonts/truetype/raleway/Raleway-Bold.ttf";
 }
 
-static std::string browserBin() {
-    if (const char* e = std::getenv("LUDEX_BROWSER_BIN")) return e;
-    return "google-chrome";
-}
-
-static std::vector<std::string> browserExtraArgs() {
-    if (const char* e = std::getenv("LUDEX_BROWSER_EXTRA_ARGS"))
-        return splitArgs(e);
-    return {"--new-window"};
-}
-
 static std::vector<std::string> wallpaperExts() {
     return {".png", ".jpg", ".jpeg", ".webp"};
 }
@@ -118,12 +107,6 @@ bool Config::load(const std::filesystem::path& path) {
     std::string ie = ini.get(S, "icon_exts");
     icon_exts = ie.empty() ? defaults::iconExts() : splitCsv(ie);
 
-    // Browser
-    browser_bin = ini.get(S, "browser_bin", defaults::browserBin());
-    std::string bea = ini.get(S, "browser_extra_args");
-    browser_extra_args = bea.empty() ? defaults::browserExtraArgs()
-                                     : splitArgs(bea);
-
     // Fuentes
     font_regular = ini.get(S, "font_regular", defaults::fontRegular());
     font_bold    = ini.get(S, "font_bold",    defaults::fontBold());
@@ -146,6 +129,10 @@ bool Config::load(const std::filesystem::path& path) {
     edge_fade_pct   = ini.getFloat(S, "edge_fade_pct",   edge_fade_pct);
     edge_fade_alpha = ini.getFloat(S, "edge_fade_alpha", edge_fade_alpha);
     show_player_indicators = ini.getInt(S, "show_player_indicators", show_player_indicators) != 0;
+    wallpaper_interval     = ini.getFloat(S, "wallpaper_interval",     wallpaper_interval);
+    wallpaper_ken_burns    = ini.getInt  (S, "wallpaper_ken_burns",    wallpaper_ken_burns ? 1 : 0) != 0;
+    wallpaper_ken_burns_zoom = ini.getFloat(S, "wallpaper_ken_burns_zoom", wallpaper_ken_burns_zoom);
+    wallpaper_fade_duration = ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
     theme = ini.get(S, "theme", theme);          // load
 
     if (visible_items < 3) visible_items = 3;
@@ -184,8 +171,6 @@ bool Config::save(const std::filesystem::path& path) const {
     ini.set(S, "wallpaper_exts",      joinCsv(wallpaper_exts));
     ini.set(S, "icon_exts",           joinCsv(icon_exts));
 
-    ini.set(S, "browser_bin",         browser_bin);
-    ini.set(S, "browser_extra_args",  joinArgs(browser_extra_args));
 
     ini.set(S, "font_regular",        font_regular);
     ini.set(S, "font_bold",           font_bold);
@@ -206,6 +191,10 @@ bool Config::save(const std::filesystem::path& path) const {
     ini.set(S, "active_player",       std::to_string(active_player));
     ini.set(S, "theme", theme);                  // save
     ini.set(S, "show_player_indicators", show_player_indicators ? "1" : "0");
+    ini.set(S, "wallpaper_interval",      std::to_string(wallpaper_interval));
+    ini.set(S, "wallpaper_ken_burns",     wallpaper_ken_burns ? "1" : "0");
+    ini.set(S, "wallpaper_ken_burns_zoom", std::to_string(wallpaper_ken_burns_zoom));
+    ini.set(S, "wallpaper_fade_duration", std::to_string(wallpaper_fade_duration));
     return ini.save(path);
 }
 
