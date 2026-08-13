@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(tenfoot_shell_cpp CXX)
+project(ludex_launcher_cpp CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +11,7 @@ option(TENFOOT_ENABLE_LIRC "Enable LIRC IR remote support" ON)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
+pkg_check_modules(RSVG IMPORTED_TARGET librsvg-2.0)
 
 find_package(Vulkan REQUIRED)
 
@@ -39,7 +40,7 @@ add_library(imgui STATIC
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp  # <--- AÑADIR ESTO
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp
 )
 
 target_include_directories(imgui PUBLIC
@@ -79,6 +80,17 @@ target_link_libraries(ludex-launcher PRIVATE
     Vulkan::Vulkan
 )
 
+# ---------------------------------------------------------------------------
+# librsvg (SVG de alta calidad) - MOVIDO DESPUÉS de add_executable
+# ---------------------------------------------------------------------------
+if(RSVG_FOUND)
+    target_compile_definitions(ludex-launcher PRIVATE LUDEX_HAVE_RSVG=1)
+    target_link_libraries(ludex-launcher PRIVATE PkgConfig::RSVG)
+    message(STATUS "SVG high quality: librsvg")
+else()
+    message(WARNING "librsvg not found, SVG rendering may fail!")
+endif()
+
 if(TENFOOT_ENABLE_LIRC)
     find_library(LIRC_CLIENT_LIBRARY NAMES lirc_client)
     find_path(LIRC_CLIENT_INCLUDE_DIR NAMES lirc/lirc_client.h)
@@ -97,21 +109,16 @@ endif()
 # Shaders para ImGui/Vulkan
 # ---------------------------------------------------------------------------
 
-find_program(GLSLANG_VALIDATOR NAMES glslangValidator)
-
 if(GLSLANG_VALIDATOR)
     set(SHADER_OUT ${CMAKE_BINARY_DIR}/shaders)
     file(MAKE_DIRECTORY ${SHADER_OUT})
 
-    # Shaders locales del proyecto.
     set(LOCAL_VERT ${CMAKE_CURRENT_SOURCE_DIR}/shaders/imgui.vert)
     set(LOCAL_FRAG ${CMAKE_CURRENT_SOURCE_DIR}/shaders/imgui.frag)
 
-    # Shaders que vienen con Dear ImGui.
     set(IMGUI_VERT ${imgui_SOURCE_DIR}/backends/vulkan/glsl_shader.vert)
     set(IMGUI_FRAG ${imgui_SOURCE_DIR}/backends/vulkan/glsl_shader.frag)
 
-    # Fallback por si alguna versión antigua los tuviera en otra ruta.
     if(NOT EXISTS ${IMGUI_VERT})
         set(IMGUI_VERT ${imgui_SOURCE_DIR}/backends/glsl_shader.vert)
     endif()
@@ -120,7 +127,6 @@ if(GLSLANG_VALIDATOR)
         set(IMGUI_FRAG ${imgui_SOURCE_DIR}/backends/glsl_shader.frag)
     endif()
 
-    # Preferimos los shaders locales. Si no existen, usamos los de ImGui.
     if(EXISTS ${LOCAL_VERT} AND EXISTS ${LOCAL_FRAG})
         set(VERT_SRC ${LOCAL_VERT})
         set(FRAG_SRC ${LOCAL_FRAG})

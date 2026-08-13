@@ -40,7 +40,9 @@ struct Config {
     bool  wallpaper_ken_burns = true;      // activar/desactivar efecto
     float wallpaper_ken_burns_zoom = 1.12f; // escala máxima (1.12 = +12%)
     float wallpaper_fade_duration = 2.0f; // segundos de crossfade
-
+    std::filesystem::path icons_dir;      // recursos de UI (menús, ayuda)
+    std::string help_icons = "xbox";      // "xbox" | "playstation" | "none"
+    
     bool load(const std::filesystem::path& path);
     bool save(const std::filesystem::path& path) const;
 };

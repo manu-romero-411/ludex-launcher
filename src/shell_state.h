@@ -12,6 +12,21 @@ struct WallpaperLayer {
     float kb_scale = 1.0f;
     float kb_pan_x = 0.0f, kb_pan_y = 0.0f;
 };
+struct UiIcons {
+    void* settings = nullptr;
+    void* exit = nullptr;
+    void* shutdown = nullptr;
+    void* restart = nullptr;
+    void* suspend = nullptr;
+
+    void* nav_v = nullptr;
+    void* nav_h = nullptr;
+    void* accept = nullptr;
+    void* back = nullptr;
+    void* home = nullptr;
+    void* gamepad = nullptr;
+
+};
 
 struct ShellState {
     std::vector<App> apps;
@@ -27,13 +42,14 @@ struct ShellState {
     bool menu_open = false;
     float menu_anim = 0.0f;
 
-    // --- Ken Burns + crossfade ---
-    std::vector<WallpaperLayer> wallpapers;   // todas las imágenes
-    int wp_current = -1;        // índice actual (inicial -1 = sin fondo)
-    int wp_next = -1;           // índice al que estamos transicionando
-    float wp_timer = 0.0f;      // segundos desde último cambio
-    float wp_fade = 1.0f;       // 1.0 = solo current, 0.0 = solo next
-    bool  wp_in_transition = false;
+    std::vector<WallpaperLayer> wallpapers;
+    int wp_current = -1;
+    int wp_next = -1;
+    float wp_timer = 0.0f;
+    float wp_fade = 1.0f;
+    bool wp_in_transition = false;
+
+    UiIcons ui_icons;  // <-- AGREGAR ESTA LÍNEA
 
     void refresh(const Config& cfg, const BackendRegistry& backends);
     void nav(int dy);

@@ -15,6 +15,7 @@ struct ShellActions {
     std::function<void()> reboot;
     std::function<void()> suspend;
     std::function<std::vector<InputManager::PlayerStatus>()> player_status;
+    std::function<void()> reload_ui_icons;
 };
 
 void panelInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);

@@ -1,9 +1,9 @@
 #include "shell_ui.h"
 
-#include <imgui.h>
-
 #include "imgui_internal.h"
 #include "input_manager.h"
+#include <imgui.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -28,13 +28,11 @@ void loadShellFonts(const Config &cfg, float screen_h) {
   io.Fonts->Clear();
   std::error_code ec;
 
-  // Tamaños mínimos seguros
   float size_tile = std::max(14.0f, screen_h * cfg.font_tile_pct);
   float size_clock = std::max(16.0f, screen_h * cfg.clock_pct);
   float size_date = std::max(12.0f, screen_h * cfg.date_pct);
   float size_hint = std::max(10.0f, screen_h * cfg.font_hint_pct);
 
-  // Cargar fuente bold para tiles
   if (std::filesystem::exists(cfg.font_bold, ec)) {
     g_font_tile =
         io.Fonts->AddFontFromFileTTF(cfg.font_bold.c_str(), size_tile);
@@ -48,7 +46,6 @@ void loadShellFonts(const Config &cfg, float screen_h) {
     g_font_tile = io.Fonts->AddFontDefault();
   }
 
-  // Cargar fuente regular para reloj/fecha/hints
   ImFont *regular = nullptr;
   if (std::filesystem::exists(cfg.font_regular, ec)) {
     regular =
@@ -64,9 +61,6 @@ void loadShellFonts(const Config &cfg, float screen_h) {
   }
 
   g_font_clock = regular;
-
-  // Para fecha y hints, reusamos la misma fuente pero con distinto tamaño
-  // (ImGui permite múltiples tamaños de la misma fuente en el atlas)
   g_font_date =
       io.Fonts->AddFontFromFileTTF(cfg.font_regular.c_str(), size_date);
   if (!g_font_date)
@@ -77,7 +71,6 @@ void loadShellFonts(const Config &cfg, float screen_h) {
   if (!g_font_hint)
     g_font_hint = regular;
 
-  // FORZAR construcción del atlas antes de que el backend lo use
   unsigned char *pixels;
   int width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
@@ -116,6 +109,23 @@ static std::string fmt3(float v) {
   char b[32];
   std::snprintf(b, sizeof(b), "%.3f", v);
   return b;
+}
+
+static void *uiIcon(const UiIcons &ic, int idx) {
+  switch (idx) {
+  case 1:
+    return ic.settings;
+  case 2:
+    return ic.exit;
+  case 3:
+    return ic.shutdown;
+  case 4:
+    return ic.restart;
+  case 5:
+    return ic.suspend;
+  default:
+    return nullptr;
+  }
 }
 
 /* ================================================================
@@ -163,76 +173,7 @@ static void drawClock(const Config &cfg, const ImGuiViewport *vp,
   ImGui::PopFont();
 }
 
-static void
-drawPlayerIndicators(const std::vector<InputManager::PlayerStatus> &players,
-                     const ImGuiViewport *vp, bool left_side, bool bottom) {
-  if (players.empty())
-    return;
 
-  ImGui::PushFont(g_font_hint);
-  float margin = vp->WorkSize.x * 0.018f;
-
-  float y;
-  ImDrawList *dl = ImGui::GetWindowDrawList();
-
-  if (bottom) {
-    // encima del bloque de reloj inferior
-    ImGui::PushFont(g_font_clock);
-    float ch = ImGui::CalcTextSize("00:00:00").y;
-    ImGui::PopFont();
-    ImGui::PushFont(g_font_date);
-    float dh = ImGui::CalcTextSize("0").y;
-    ImGui::PopFont();
-    y = vp->WorkSize.y - margin - dh - 6.0f - ch - 34.0f;
-  } else {
-    y = margin + 80.0f;
-  }
-
-  if (left_side) {
-    float x = vp->WorkSize.x - margin;
-    for (const auto &p : players) {
-      std::string label = "J" + std::to_string(p.player + 1);
-      ImVec2 ts = ImGui::CalcTextSize(label.c_str());
-      x -= (ts.x + 30.0f);
-
-      ImU32 color =
-          p.active ? IM_COL32(100, 255, 120, 255) // verde brillante si activo
-                   : IM_COL32(80, 80, 85, 200);   // gris oscuro si inactivo
-
-      dl->AddCircleFilled(ImVec2(x + ts.x + 14.0f, y + ts.y * 0.5f), 7.0f,
-                          color);
-
-      if (p.active) {
-        dl->AddCircle(ImVec2(x + ts.x + 14.0f, y + ts.y * 0.5f), 10.0f,
-                      IM_COL32(100, 255, 120, 180), 0, 2.0f);
-      }
-
-      ImGui::SetCursorScreenPos(ImVec2(x, y));
-      ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.85f, 1.0f), "%s", label.c_str());
-    }
-  } else {
-    float x = margin;
-    for (const auto &p : players) {
-      std::string label = "J" + std::to_string(p.player + 1);
-      ImVec2 ts = ImGui::CalcTextSize(label.c_str());
-
-      ImU32 color =
-          p.active ? IM_COL32(100, 255, 120, 255) : IM_COL32(80, 80, 85, 200);
-
-      dl->AddCircleFilled(ImVec2(x + 7.0f, y + ts.y * 0.5f), 7.0f, color);
-
-      if (p.active) {
-        dl->AddCircle(ImVec2(x + 7.0f, y + ts.y * 0.5f), 10.0f,
-                      IM_COL32(100, 255, 120, 180), 0, 2.0f);
-      }
-
-      ImGui::SetCursorScreenPos(ImVec2(x + 20.0f, y));
-      ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.85f, 1.0f), "%s", label.c_str());
-      x += ts.x + 36.0f;
-    }
-  }
-  ImGui::PopFont();
-}
 
 static void drawEdgeFades(const Config &cfg, float W, float H) {
   ImDrawList *dl = ImGui::GetWindowDrawList();
@@ -273,7 +214,9 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
   float y_base = H - total * state.menu_anim;
 
   static const char *labels[3] = {"CONFIGURACI\xC3\x93N", "SALIR",
-                                  "APAGAR PC..."};
+                                  "SHUTDOWN..."};
+  void *icons[3] = {state.ui_icons.settings, state.ui_icons.exit,
+                    state.ui_icons.shutdown};
 
   for (int m = 0; m < 3; ++m) {
     float y0 = y_base + m * menu_h;
@@ -301,32 +244,105 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
     std::string label = labels[m];
     ImGui::PushFont(g_font_tile);
     ImVec2 ts = ImGui::CalcTextSize(label.c_str());
-    dl->AddText(ImVec2(min.x + W * 0.012f, y0 + (menu_h - ts.y) * 0.5f),
-                text_col, label.c_str());
+
+    float isz = menu_h * 0.55f;
+    float lx = min.x + W * 0.012f;
+    if (icons[m]) {
+      dl->AddImage((ImTextureID)icons[m],
+                   ImVec2(lx, y0 + (menu_h - isz) * 0.5f),
+                   ImVec2(lx + isz, y0 + (menu_h + isz) * 0.5f), ImVec2(0, 0),
+                   ImVec2(1, 1), text_col);
+      lx += isz + W * 0.010f;
+    }
+    dl->AddText(ImVec2(lx, y0 + (menu_h - ts.y) * 0.5f), text_col,
+                label.c_str());
     ImGui::PopFont();
   }
 }
 
-static void drawHints(const ShellState &state, const ImGuiViewport *vp) {
+static void drawHints(const ShellState &state, const Config &cfg,
+                      const ImGuiViewport *vp) {
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
   ImDrawList *dl = ImGui::GetWindowDrawList();
+  bool light = (cfg.theme == "light");
+  ImU32 col = light ? IM_COL32(40, 40, 45, 220) : IM_COL32(235, 235, 235, 220);
+  const UiIcons &ic = state.ui_icons;
 
-  const char *text;
-  if (state.show_settings)
-    text = "UP/DOWN Navigate    LEFT/RIGHT Change    A Accept    B Back";
-  else if (state.show_power)
-    text = "UP/DOWN Navigate    A Accept    B Back";
-  else if (state.menu_open)
-    text = "UP/DOWN Navigate    A Accept    B / HOME Close";
-  else
-    text = "UP/DOWN Navigate    A Select    B Back    HOME Menu";
+  struct Seg {
+    void *tex;
+    const char *fallback;
+    const char *label;
+  };
+  bool horiz = (cfg.side == "top" || cfg.side == "bottom");
+
+  std::vector<Seg> segs;
+  if (state.show_settings) {
+    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
+            {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
+            {ic.accept, "A", "OK"},
+            {ic.back, "B", "BACK"}};
+  } else if (state.show_power) {
+    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
+            {ic.accept, "A", "ACCEPT"},
+            {ic.back, "B", "BACK"}};
+  } else if (state.menu_open) {
+    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
+            {ic.accept, "A", "ACCEPT"},
+            {ic.back, "B / HOME", "CLOSE"}};
+  } else {
+    segs = {{horiz ? ic.nav_h : ic.nav_v, horiz ? "LEFT/RIGHT" : "UP/DOWN",
+             "NAVIGATE"},
+            {ic.accept, "A", "SELECT"},
+            {ic.back, "B", "BACK"},
+            {ic.home, "HOME", "SYSTEM MENU"}};
+  }
 
   ImGui::PushFont(g_font_hint);
-  ImVec2 ts = ImGui::CalcTextSize(text);
-  float margin = vp->WorkSize.y * 0.018f;
-  ImVec2 pos((W - ts.x) * 0.5f, H - margin - ts.y); // <-- centrado
-  dl->AddText(ImVec2(pos.x + 2, pos.y + 2), IM_COL32(0, 0, 0, 160), text);
-  dl->AddText(pos, IM_COL32(235, 235, 235, 200), text);
+
+  float gap_seg = W * 0.014f;
+  float gap_it = W * 0.004f;
+
+  struct M {
+    std::string text;
+    float tw, iw;
+    ImVec2 ts;
+  };
+  std::vector<M> ms;
+  float total = 0, base_h = 0;
+  for (auto &s : segs) {
+    M m;
+    m.text = s.tex ? s.label : (std::string(s.fallback) + " " + s.label);
+    m.ts = ImGui::CalcTextSize(m.text.c_str());
+    m.tw = m.ts.x;
+    m.iw = s.tex ? m.ts.y * 1.25f : 0.0f;
+    base_h = std::max(base_h, m.ts.y);
+    total += m.tw + (s.tex ? m.iw + gap_it : 0.0f);
+    ms.push_back(m);
+  }
+  total += gap_seg * (float)(segs.size() - 1);
+
+  float margin = H * 0.008f;               // más pegada al borde
+  bool hints_top = (cfg.side == "bottom"); // en modo bottom, arriba
+  float y = hints_top ? margin : (H - margin - base_h);
+  float x = (W - total) * 0.5f;
+
+  for (size_t i = 0; i < segs.size(); ++i) {
+    const auto &s = segs[i];
+    const auto &m = ms[i];
+    float cx = x;
+
+    if (s.tex) {
+      float hs = base_h * 1.25f;
+      float iy = y + (base_h - hs) * 0.5f;
+      dl->AddImage((ImTextureID)s.tex, ImVec2(cx, iy), ImVec2(cx + hs, iy + hs),
+                   ImVec2(0, 0), ImVec2(1, 1),
+                   IM_COL32(255, 255, 255, 220)); // <-- sin tinte de tema
+      cx += hs + gap_it;
+    }
+
+    dl->AddText(ImVec2(cx, y), col, m.text.c_str());
+    x += m.tw + (s.tex ? m.iw + gap_it : 0.0f) + gap_seg;
+  }
   ImGui::PopFont();
 }
 
@@ -342,10 +358,11 @@ struct SRow {
   std::string (*get)(const Config &);
   void (*adjust)(Config &, int dir);
   void (*activate)(ShellState &, Config &, const ShellActions &);
+  int icon; // 0=ninguno 1=settings 2=exit 3=shutdown 4=restart 5=suspend
 };
 
 const SRow kSettingsRows[] = {
-    {"LADO SIDEBAR", true, [](const Config &c) { return c.side; },
+    {"APP DRAWER MODE", true, [](const Config &c) { return c.side; },
      [](Config &c, int) {
        if (c.side == "left")
          c.side = "right";
@@ -356,115 +373,128 @@ const SRow kSettingsRows[] = {
        else
          c.side = "left";
      },
-     nullptr},
-    {"ELEMENTOS VISIBLES", true,
+     nullptr, 0},
+    {"# VISIBLE ELEMENTS", true,
      [](const Config &c) { return std::to_string(c.visible_items); },
      [](Config &c, int d) {
        c.visible_items = std::clamp(c.visible_items + 2 * d, 5, 11);
        if (c.visible_items % 2 == 0)
          c.visible_items--;
      },
-     nullptr},
-    {"ANCHO TILE", true, [](const Config &c) { return fmt3(c.tile_w_pct); },
+     nullptr, 0},
+    {"TILE WIDTH", true, [](const Config &c) { return fmt3(c.tile_w_pct); },
      [](Config &c, int d) {
        c.tile_w_pct = std::clamp(c.tile_w_pct + 0.005f * d, 0.10f, 0.40f);
      },
-     nullptr},
-    {"ANCHO TILE SELECCION", true,
+     nullptr, 0},
+    {"TILE WIDTH (SELECTED)", true,
      [](const Config &c) { return fmt3(c.tile_sel_w_pct); },
      [](Config &c, int d) {
        c.tile_sel_w_pct =
            std::clamp(c.tile_sel_w_pct + 0.005f * d, 0.10f, 0.45f);
      },
-     nullptr},
-    {"ALTURA RELOJ (REINICIO)", true,
+     nullptr, 0},
+    {"CLOCK HEIGHT (RESTART REQUIRED)", true,
      [](const Config &c) { return fmt3(c.clock_pct); },
      [](Config &c, int d) {
        c.clock_pct = std::clamp(c.clock_pct + 0.002f * d, 0.02f, 0.12f);
      },
-     nullptr},
-    {"ALTURA FECHA (REINICIO)", true,
+     nullptr, 0},
+    {"DATE HEIGHT (RESTART REQUIRED)", true,
      [](const Config &c) { return fmt3(c.date_pct); },
      [](Config &c, int d) {
        c.date_pct = std::clamp(c.date_pct + 0.001f * d, 0.01f, 0.06f);
      },
-     nullptr},
-    {"SOMBRA BORDES", true,
+     nullptr, 0},
+    {"BORDER SHADOW", true,
      [](const Config &c) { return std::to_string((int)c.edge_fade_alpha); },
      [](Config &c, int d) {
        c.edge_fade_alpha =
            std::clamp(c.edge_fade_alpha + 5.0f * d, 0.0f, 255.0f);
      },
-     nullptr},
-    {"MOSTRAR MANDOS", true,
+     nullptr, 0},
+    {"SHOW GAMEPAD INDICATORS", true,
      [](const Config &c) -> std::string {
        return c.show_player_indicators ? "SI" : "NO";
      },
      [](Config &c, int) {
        c.show_player_indicators = !c.show_player_indicators;
      },
-     nullptr},
-    {"TEMA", true, [](const Config &c) { return c.theme; },
+     nullptr, 0},
+    {"COLOUR SCHEME", true, [](const Config &c) { return c.theme; },
      [](Config &c, int) { c.theme = (c.theme == "dark") ? "light" : "dark"; },
-     nullptr},
-    {"CAMBIO FONDO (SEG)", true,
+     nullptr, 0},
+    {"LOOP WP (SEG)", true,
      [](const Config &c) { return fmt3(c.wallpaper_interval); },
      [](Config &c, int d) {
        c.wallpaper_interval =
            std::clamp(c.wallpaper_interval + 5.0f * d, 5.0f, 600.0f);
      },
-     nullptr},
-    {"ZOOM FONDO", true,
+     nullptr, 0},
+    {"ZOOM WP", true,
      [](const Config &c) { return fmt3(c.wallpaper_ken_burns_zoom); },
      [](Config &c, int d) {
        c.wallpaper_ken_burns_zoom =
            std::clamp(c.wallpaper_ken_burns_zoom + 0.01f * d, 1.0f, 1.25f);
      },
-     nullptr},
-    {"FADE FONDO (SEG)", true,
+     nullptr, 0},
+    {"FADE WP (SEG)", true,
      [](const Config &c) { return fmt3(c.wallpaper_fade_duration); },
      [](Config &c, int d) {
        c.wallpaper_fade_duration =
            std::clamp(c.wallpaper_fade_duration + 0.5f * d, 0.2f, 5.0f);
      },
-     nullptr},
-    {"EFECTO KEN BURNS", true,
+     nullptr, 0},
+    {"KENBURNS EFFECT", true,
      [](const Config &c) -> std::string {
        return c.wallpaper_ken_burns ? "SI" : "NO";
      },
      [](Config &c, int) { c.wallpaper_ken_burns = !c.wallpaper_ken_burns; },
-     nullptr},
-    {"GUARDAR CAMBIOS", false, nullptr, nullptr,
-     [](ShellState &, Config &c, const ShellActions &) { c.save(c.ini_path); }},
-    {"VOLVER", false, nullptr, nullptr,
-     [](ShellState &s, Config &, const ShellActions &) {
+     nullptr, 0},
+    {"HELP ICONS", false, [](const Config &c) { return c.help_icons; }, nullptr,
+     [](ShellState &, Config &c, const ShellActions &a) {
+       c.help_icons = (c.help_icons == "xbox")          ? "playstation"
+                      : (c.help_icons == "playstation") ? "none"
+                                                        : "xbox";
+       if (a.reload_ui_icons)
+         a.reload_ui_icons();
+     },
+     0},
+        {"GO BACK", false, nullptr, nullptr,
+     [](ShellState &s, Config &c, const ShellActions &) {
+       c.save(c.ini_path);   // <-- guardar al salir
        s.show_settings = false;
-     }},
+     },
+     0},
 };
 
 const SRow kPowerRows[] = {
-    {"SUSPENDER", false, nullptr, nullptr,
+    {"SLEEP", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &a) {
        if (a.suspend)
          a.suspend();
        s.show_power = false;
-     }},
-    {"REINICIAR", false, nullptr, nullptr,
+     },
+     5},
+    {"REBOOT", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &a) {
        if (a.reboot)
          a.reboot();
        s.show_power = false;
-     }},
-    {"APAGAR", false, nullptr, nullptr,
+     },
+     4},
+    {"POWER OFF", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &a) {
        if (a.poweroff)
          a.poweroff();
        s.show_power = false;
-     }},
+     },
+     3},
     {"VOLVER", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &) {
        s.show_power = false;
-     }},
+     },
+     2},
 };
 
 constexpr int kSettingsCount =
@@ -506,10 +536,12 @@ void panelInput(ShellState &st, Config &cfg, const ShellActions &actions,
     break;
   case UiAction::Back:
   case UiAction::Guide:
-    if (settings)
+    if (settings) {
+      cfg.save(cfg.ini_path);
       st.show_settings = false;
-    else
+    } else {
       st.show_power = false;
+    }
     break;
   default:
     break;
@@ -524,7 +556,6 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
 
   bool light = (cfg.theme == "light");
 
-  // Colores según tema
   ImU32 fade_col =
       light ? IM_COL32(240, 240, 240, 210) : IM_COL32(0, 0, 0, 210);
   ImU32 panel_bg =
@@ -537,6 +568,8 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
       light ? IM_COL32(25, 25, 30, 255) : IM_COL32(230, 230, 230, 255);
   ImU32 text_val =
       light ? IM_COL32(40, 40, 50, 255) : IM_COL32(240, 240, 240, 255);
+  ImU32 border_col =
+      light ? IM_COL32(120, 125, 140, 255) : IM_COL32(150, 155, 170, 200);
 
   dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H), fade_col);
 
@@ -545,10 +578,14 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
   int focus = settings ? st.settings_focus : st.power_focus;
   const char *title = settings ? "AJUSTES DE INTERFAZ" : "APAGADO DEL EQUIPO";
 
+  int footer_rows = 1; // GUARDAR+VOLVER / VOLVER
+  int list_count = count - footer_rows;
+
   float row_h = H * 0.055f;
   float title_h = H * 0.09f;
+  float footer_h = row_h * 1.6f;
   float pw = W * 0.56f;
-  float ph = title_h + count * row_h + row_h * 0.8f;
+  float ph = title_h + list_count * row_h + footer_h;
   float px = (W - pw) * 0.5f;
   float py = (H - ph) * 0.5f;
   float pad = W * 0.012f;
@@ -562,7 +599,8 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
   dl->AddText(ImVec2(px + (pw - tt.x) * 0.5f, py + (title_h - tt.y) * 0.5f),
               text_main, title);
 
-  for (int i = 0; i < count; ++i) {
+  /* ---- filas de la lista ---- */
+  for (int i = 0; i < list_count; ++i) {
     float y0 = py + title_h + i * row_h;
     ImVec2 rmin(px, y0), rmax(px + pw, y0 + row_h);
 
@@ -581,16 +619,62 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
     }
     ImGui::PopID();
 
-    dl->AddText(ImVec2(px + pad, y0 + (row_h - tt.y) * 0.5f), text_main,
+    void *ricon = uiIcon(st.ui_icons, rows[i].icon);
+    float isz = row_h * 0.6f;
+    float lx = px + pad;
+    if (ricon) {
+      dl->AddImage((ImTextureID)ricon, ImVec2(lx, y0 + (row_h - isz) * 0.5f),
+                   ImVec2(lx + isz, y0 + (row_h + isz) * 0.5f), ImVec2(0, 0),
+                   ImVec2(1, 1), text_main);
+      lx += isz + pad * 0.8f;
+    }
+    dl->AddText(ImVec2(lx, y0 + (row_h - tt.y) * 0.5f), text_main,
                 rows[i].label);
 
-    if (rows[i].adjustable && rows[i].get) {
-      std::string val = "<  " + rows[i].get(cfg) + "  >";
+    if (rows[i].get) {
+      std::string val = rows[i].get(cfg);
+      if (rows[i].adjustable)
+        val = "<  " + val + "  >";
       ImVec2 vs = ImGui::CalcTextSize(val.c_str());
       dl->AddText(ImVec2(px + pw - pad - vs.x, y0 + (row_h - vs.y) * 0.5f),
                   text_val, val.c_str());
     }
   }
+
+  /* ---- botones tipo ES en el pie, sin icono ---- */
+  float bh = row_h * 0.95f;
+  float bw = pw * (footer_rows == 2 ? 0.30f : 0.24f);
+  float gapb = pw * 0.04f;
+  float total_w = footer_rows * bw + (footer_rows - 1) * gapb;
+  float bx0 = px + (pw - total_w) * 0.5f;
+  float by = py + title_h + list_count * row_h + (footer_h - bh) * 0.5f;
+
+  for (int f = 0; f < footer_rows; ++f) {
+    int i = list_count + f;
+    ImVec2 bmin(bx0 + f * (bw + gapb), by);
+    ImVec2 bmax(bmin.x + bw, bmin.y + bh);
+
+    if (focus == i)
+      dl->AddRectFilled(bmin, bmax, row_focus, 6.0f);
+    dl->AddRect(bmin, bmax, border_col, 6.0f, 0, 2.0f);
+
+    const char *blabel = rows[i].label;
+    ImVec2 bs = ImGui::CalcTextSize(blabel);
+    dl->AddText(
+        ImVec2(bmin.x + (bw - bs.x) * 0.5f, bmin.y + (bh - bs.y) * 0.5f),
+        text_main, blabel);
+
+    ImGui::PushID(9100 + i);
+    ImGui::SetCursorScreenPos(bmin);
+    ImGui::InvisibleButton("##fbtn", ImVec2(bw, bh));
+    if (ImGui::IsItemClicked()) {
+      (settings ? st.settings_focus : st.power_focus) = i;
+      if (rows[i].activate)
+        rows[i].activate(st, cfg, actions);
+    }
+    ImGui::PopID();
+  }
+
   ImGui::PopFont();
 }
 
@@ -599,19 +683,14 @@ static void drawWallpaperLayer(ImDrawList *dl, float W, float H,
   if (!L.texture || L.w <= 0 || L.h <= 0)
     return;
 
-  // cover-crop base
   float iw = (float)L.w, ih = (float)L.h;
   float cover_scale = std::max(W / iw, H / ih);
-
-  // Ken Burns: alejamos un poco para tener margen de pan
   float zoom = L.kb_scale;
   float total_scale = cover_scale * zoom;
 
-  // rect visible en coords de la imagen (pre-zoom)
   float vis_w = W / total_scale;
   float vis_h = H / total_scale;
 
-  // centro con pan (en unidades de imagen, normalizadas a [0,1])
   float cx = 0.5f + L.kb_pan_x;
   float cy = 0.5f + L.kb_pan_y;
   cx = std::clamp(cx, vis_w / (2.0f * iw), 1.0f - vis_w / (2.0f * iw));
@@ -622,6 +701,54 @@ static void drawWallpaperLayer(ImDrawList *dl, float W, float H,
 
   dl->AddImage((ImTextureID)L.texture, ImVec2(0, 0), ImVec2(W, H), uv0, uv1,
                tint);
+}
+
+/* Silueta de mando de reserva (si no existe gamepad.svg) */
+static void drawGamepadGlyph(ImDrawList *dl, ImVec2 min, ImVec2 max, ImU32 col) {
+    float w = max.x - min.x, h = max.y - min.y;
+    ImVec2 bmin(min.x, min.y + h * 0.22f);
+    ImVec2 bmax(max.x, max.y - h * 0.10f);
+    dl->AddRectFilled(bmin, bmax, col, h * 0.28f);
+    dl->AddCircleFilled(ImVec2(min.x + w * 0.20f, min.y + h * 0.28f), h * 0.16f, col);
+    dl->AddCircleFilled(ImVec2(max.x - w * 0.20f, min.y + h * 0.28f), h * 0.16f, col);
+}
+
+static void drawPlayerIndicators(const ShellState &state, const Config &cfg,
+                     const std::vector<InputManager::PlayerStatus> &players,
+                     const ImGuiViewport *vp) {
+  if (players.empty()) return;
+
+  ImDrawList *dl = ImGui::GetWindowDrawList();
+  float W = vp->WorkSize.x, H = vp->WorkSize.y;
+  bool light = (cfg.theme == "light");
+
+  // Mismo esquema de color que el resto de la UI + verde eléctrico en activo
+  ImU32 idle = light ? IM_COL32(40, 40, 45, 220) : IM_COL32(220, 222, 228, 220);
+  ImU32 active = IM_COL32(0, 255, 90, 255);
+
+  bool gp_top = (cfg.side == "bottom");
+  bool gp_right = (cfg.side != "right");
+
+  float s = H * 0.024f;
+  float gap = s * 0.4f;
+  float margin = H * 0.018f;
+  int n = std::min((int)players.size(), 8); // máximo 8 mandos
+
+  float total = n * s + (n - 1) * gap;
+  float x_start = gp_right ? (W - margin - total) : margin;
+  float y = gp_top ? margin : (H - margin - s);
+
+    for (int i = 0; i < n; ++i) {
+        ImU32 col = players[i].active ? active : idle;
+        float x = x_start + i * (s + gap);
+        if (state.ui_icons.gamepad) {
+            dl->AddImage((ImTextureID)state.ui_icons.gamepad,
+                         ImVec2(x, y), ImVec2(x + s, y + s),
+                         ImVec2(0, 0), ImVec2(1, 1), col);
+        } else {
+            drawGamepadGlyph(dl, ImVec2(x, y), ImVec2(x + s, y + s), col);
+        }
+    }
 }
 
 /* ================================================================
@@ -646,7 +773,6 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   ImGui::Begin("##ludex", nullptr, flags);
   ImDrawList *dl = ImGui::GetWindowDrawList();
 
-  /* ---- fondo: Ken Burns + crossfade + overlay ---- */
   bool has_wp = !state.wallpapers.empty() && state.wp_current >= 0;
 
   if (has_wp) {
@@ -657,7 +783,7 @@ void drawShellImGui(ShellState &state, const Config &cfg,
 
     if (state.wp_in_transition && state.wp_next >= 0) {
       float raw = state.wp_fade;
-      float f = raw * raw * (3.0f - 2.0f * raw); // smoothstep
+      float f = raw * raw * (3.0f - 2.0f * raw);
       int a_cur = (int)(255 * f);
       int a_nxt = (int)(255 * (1.0f - f));
       ImU32 tint_cur = IM_COL32(255, 255, 255, a_cur);
@@ -680,7 +806,6 @@ void drawShellImGui(ShellState &state, const Config &cfg,
 
   drawEdgeFades(cfg, W, H);
 
-  /* ---- sidebar de apps ---- */
   bool horizontal = (cfg.side == "top" || cfg.side == "bottom");
   bool left = (cfg.side == "left");
   bool top = (cfg.side == "top");
@@ -689,9 +814,8 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   float k = cfg.tile_sel_ratio;
   int N = (int)state.apps.size();
 
-  // Dimensiones según orientación
-  float main_axis = horizontal ? W : H;  // eje del carrusel
-  float cross_axis = horizontal ? H : W; // eje perpendicular
+  float main_axis = horizontal ? W : H;
+  float cross_axis = horizontal ? H : W;
 
   float slot = main_axis / ((float)(V - 1) + k);
   float sel_size = slot * k;
@@ -701,7 +825,6 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   float icon_sel = cross_axis * cfg.icon_sel_pct * (horizontal ? 1.5f : 1.0f);
   float pad = cross_axis * 0.012f;
 
-  // Centro del eje principal (con animación suave)
   auto centerMain = [&](float d) -> float {
     float ad = std::fabs(d);
     float sgn = d >= 0.0f ? 1.0f : -1.0f;
@@ -787,14 +910,9 @@ void drawShellImGui(ShellState &state, const Config &cfg,
       dl->AddRectFilled(min, max, colScaled(app.color1, bright));
     }
 
-    // ---- icono + label: UNA sola vez, según orientación ----
     std::string label = upper(app.name);
 
-    // Fuente del label: tamaño completo en la seleccionada,
-    // ~22% menor en inactivas (el atlas está al tamaño grande,
-    // así que reducir es limpio).
     if (!g_font_tile) {
-      // Fallback extremo: dibujar sin fuente (ImGui usará la default)
       ImGui::PushFont(ImGui::GetDefaultFont());
     } else {
       ImGui::PushFont(g_font_tile);
@@ -814,16 +932,19 @@ void drawShellImGui(ShellState &state, const Config &cfg,
             : IM_COL32(255, 255, 255, 255);
 
     if (horizontal) {
-      float gap = cross_axis * 0.02f;
       float icon_x = x0 + (h_i - isz) * 0.5f;
       float label_x = x0 + (h_i - ts.x) * 0.5f;
       float icon_y, label_y;
+
       if (top) {
-        label_y = y0 + w_i * 0.10f;
-        icon_y = label_y + ts.y + gap;
+        // label pegado arriba; icono centrado en el resto
+        label_y = y0 + w_i * 0.05f;
+        float area_top = label_y + ts.y;
+        icon_y = area_top + ((y0 + w_i) - area_top - isz) * 0.5f;
       } else {
-        icon_y = y0 + w_i * 0.10f;
-        label_y = icon_y + isz + gap;
+        // label pegado abajo; icono centrado en el resto
+        label_y = y0 + w_i * 0.95f - ts.y;
+        icon_y = y0 + (label_y - y0 - isz) * 0.5f;
       }
 
       if (app.icon_texture) {
@@ -845,7 +966,6 @@ void drawShellImGui(ShellState &state, const Config &cfg,
     ImGui::PopFont();
   }
 
-  /* ---- capa superior: menú sistema O panel completo ---- */
   if (panel_open) {
     drawPanel(state, const_cast<Config &>(cfg), actions, state.show_settings);
   } else {
@@ -860,11 +980,13 @@ void drawShellImGui(ShellState &state, const Config &cfg,
 
   drawClock(cfg, vp, left, clock_bottom);
   if (cfg.show_player_indicators) {
-    drawPlayerIndicators(actions.player_status(), vp, left, clock_bottom);
+    drawPlayerIndicators(state, cfg, actions.player_status(), vp);
   }
   if (!panel_open) {
-    drawHints(state, vp);
+    drawHints(state, cfg, vp);
   }
+
   ImGui::End();
   ImGui::PopStyleVar();
 }
+

@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsdl2-dev \
     libsdl2-image-dev \
     libglm-dev \
+    librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /project

@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
   int sw = 0, sh = 0;
   renderer->getOutputSize(&sw, &sh);
   loadShellAssets(*renderer, shell, cfg, sw, sh);
-
+  loadUiIcons(*renderer, shell, cfg, sh);
   bool running = true;
   bool want_quit = false;
 
@@ -123,12 +123,12 @@ int main(int argc, char **argv) {
   };
   actions.quit = [&] { want_quit = true; };
   actions.poweroff = [&] {
-    launchApp({"systemctl", "poweroff"}, LaunchHooks{});
+    launchApp({"echo", "systemctl", "poweroff"}, LaunchHooks{});
   };
-  actions.reboot = [&] { launchApp({"systemctl", "reboot"}, LaunchHooks{}); };
-  actions.suspend = [&] { launchApp({"systemctl", "suspend"}, LaunchHooks{}); };
+  actions.reboot = [&] { launchApp({"echo", "systemctl", "reboot"}, LaunchHooks{}); };
+  actions.suspend = [&] { launchApp({"echo", "systemctl", "suspend"}, LaunchHooks{}); };
   actions.player_status = [&] { return input.playerStatus(); };
-
+  actions.reload_ui_icons = [&] { loadUiIcons(*renderer, shell, cfg, sh); };
   auto handleAction = [&](UiAction a) {
     if (shell.show_settings || shell.show_power) {
       panelInput(shell, cfg, actions, a);
