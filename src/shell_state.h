@@ -12,6 +12,10 @@ struct ShellState {
     int selected = 0;
     float carousel_offset = 0.0f;
 
+    void* wallpaper_texture = nullptr;
+    int wallpaper_w = 0;
+    int wallpaper_h = 0;
+
     void refresh(const Config& cfg);
     void nav(int dx);
     void update(float dt);

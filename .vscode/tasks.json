@@ -34,7 +34,7 @@
         {
             "label": "run",
             "type": "shell",
-            "command": "./build/tenfoot-shell",
+            "command": "./build/ludex-launcher",
             "dependsOn": "build",
             "problemMatcher": []
         }

@@ -14,12 +14,12 @@ public:
         fd_ = lirc_init("tenfoot", 0);
 
         if (fd_ < 0) {
-            std::cerr << "[tenfoot-shell] lirc_init falló" << std::endl;
+            std::cerr << "[ludex-launcher] lirc_init falló" << std::endl;
             return false;
         }
 
         if (lirc_readconfig(nullptr, &config_, nullptr) != 0) {
-            std::cerr << "[tenfoot-shell] lirc_readconfig falló" << std::endl;
+            std::cerr << "[ludex-launcher] lirc_readconfig falló" << std::endl;
             lirc_deinit();
             fd_ = -1;
             return false;
@@ -30,7 +30,7 @@ public:
             fcntl(fd_, F_SETFL, flags | O_NONBLOCK);
         }
 
-        std::cout << "[tenfoot-shell] LIRC inicializado" << std::endl;
+        std::cout << "[ludex-launcher] LIRC inicializado" << std::endl;
 
         return true;
     }

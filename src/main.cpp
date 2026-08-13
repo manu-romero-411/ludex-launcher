@@ -11,6 +11,7 @@
 #include "launcher.h"
 #include "renderer.h"
 #include "shell_state.h"
+#include "assets.h"
 
 static void handleIrEvent(
     const IrEvent& event,
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "tenfoot-shell",
+        "ludex-launcher",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         1280,
@@ -73,14 +74,14 @@ int main(int argc, char** argv) {
 
     auto ir = createDefaultIrInput();
     if (!ir->init()) {
-        std::cerr << "[tenfoot-shell] IR no disponible" << std::endl;
+        std::cerr << "[ludex-launcher] IR no disponible" << std::endl;
     }
+
 
     ShellState shell;
     shell.refresh(cfg);
 
     std::unique_ptr<Renderer> renderer = createVulkanRenderer();
-
     if (!renderer->init(window)) {
         std::cerr << "No se pudo inicializar el renderer" << std::endl;
         input.shutdown();
@@ -90,6 +91,30 @@ int main(int argc, char** argv) {
     }
 
     bool running = true;
+    loadShellAssets(*renderer, shell, cfg);
+
+    auto launchSelected = [&](const App& app) {
+        LaunchHooks hooks;
+
+        hooks.before = [&]() {
+            input.closeControllers();
+            SDL_MinimizeWindow(window);
+            SDL_HideWindow(window);
+            SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+        };
+
+        hooks.after = [&]() {
+            input.rescanControllers();
+            SDL_ShowWindow(window);
+            SDL_RaiseWindow(window);
+            SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+            shell.refresh(cfg);
+            loadShellAssets(*renderer, shell, cfg);
+        };
+
+        launchApp(app.cmd, hooks);
+    };
 
     Uint64 last_time = SDL_GetPerformanceCounter();
 
@@ -125,23 +150,7 @@ int main(int argc, char** argv) {
                     case SDLK_RETURN:
                     case SDLK_SPACE: {
                         if (const App* app = shell.selectedApp()) {
-                            LaunchHooks hooks;
-
-                            hooks.before = [&]() {
-                                input.closeControllers();
-                                SDL_MinimizeWindow(window);
-                                SDL_HideWindow(window);
-                                SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-                            };
-
-                            hooks.after = [&]() {
-                                input.rescanControllers();
-                                SDL_ShowWindow(window);
-                                SDL_RaiseWindow(window);
-                                SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-                            };
-
-                            launchApp(app->cmd, hooks);
+                            launchSelected(*app);
                         }
                         break;
                     }
@@ -152,8 +161,12 @@ int main(int argc, char** argv) {
 
                     case SDLK_F5:
                         shell.refresh(cfg);
+                        loadShellAssets(*renderer, shell, cfg);
                         break;
 
+                    case SDLK_w:
+                        loadWallpaper(*renderer, shell, cfg);
+                        break;
                     case SDLK_F8: {
                         // Debug: mover J1 hacia J2.
                         input.movePlayer(0, 1);
@@ -240,32 +253,13 @@ int main(int argc, char** argv) {
 
         renderer->beginFrame();
 
-        renderer->drawShell(
-            shell,
-            [&](const App& app) {
-                LaunchHooks hooks;
-
-                hooks.before = [&]() {
-                    input.closeControllers();
-                    SDL_MinimizeWindow(window);
-                    SDL_HideWindow(window);
-                    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-                };
-
-                hooks.after = [&]() {
-                    input.rescanControllers();
-                    SDL_ShowWindow(window);
-                    SDL_RaiseWindow(window);
-                    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-                };
-
-                launchApp(app.cmd, hooks);
-            }
-        );
-
+        renderer->drawShell(shell, [&](const App& app) {
+            launchSelected(app);
+        });
         renderer->endFrame();
     }
 
+    freeShellAssets(*renderer, shell);
     renderer->shutdown();
     ir->shutdown();
     input.shutdown();

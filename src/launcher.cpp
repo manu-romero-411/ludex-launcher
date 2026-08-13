@@ -23,7 +23,7 @@ int launchApp(
     if (pid < 0) {
         std::fprintf(
             stderr,
-            "[tenfoot-shell] fork falló: %s\n",
+            "[ludex-launcher] fork falló: %s\n",
             std::strerror(errno)
         );
 
@@ -47,7 +47,7 @@ int launchApp(
 
         std::fprintf(
             stderr,
-            "[tenfoot-shell] execvp falló para %s: %s\n",
+            "[ludex-launcher] execvp falló para %s: %s\n",
             cmd[0].c_str(),
             std::strerror(errno)
         );

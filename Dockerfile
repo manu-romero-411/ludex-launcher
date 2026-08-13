@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     glslang-tools \
     liblirc-client-dev \
     libstb-dev \
+    libsdl2-dev \
+    libsdl2-image-dev \
     libglm-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,4 +30,4 @@ COPY . /project
 RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     && cmake --build build
 
-CMD ["./build/tenfoot-shell"]
+CMD ["./build/ludex-launcher"]

@@ -10,6 +10,7 @@ option(TENFOOT_ENABLE_LIRC "Enable LIRC IR remote support" ON)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
 
 find_package(Vulkan REQUIRED)
 
@@ -51,7 +52,7 @@ target_link_libraries(imgui PUBLIC
     Vulkan::Vulkan
 )
 
-add_executable(tenfoot-shell
+add_executable(ludex-launcher
     src/main.cpp
     src/config.cpp
     src/app_discovery.cpp
@@ -61,16 +62,18 @@ add_executable(tenfoot-shell
     src/shell_state.cpp
     src/shell_ui.cpp
     src/renderer_vulkan.cpp
+    src/assets.cpp
 )
 
-target_include_directories(tenfoot-shell PRIVATE
+target_include_directories(ludex-launcher PRIVATE
     src
     ${stb_SOURCE_DIR}
 )
 
-target_link_libraries(tenfoot-shell PRIVATE
+target_link_libraries(ludex-launcher PRIVATE
     imgui
     PkgConfig::SDL2
+    PkgConfig::SDL2_IMAGE
     Vulkan::Vulkan
 )
 
@@ -79,9 +82,9 @@ if(TENFOOT_ENABLE_LIRC)
     find_path(LIRC_CLIENT_INCLUDE_DIR NAMES lirc/lirc_client.h)
 
     if(LIRC_CLIENT_LIBRARY AND LIRC_CLIENT_INCLUDE_DIR)
-        target_compile_definitions(tenfoot-shell PRIVATE HAVE_LIRC=1)
-        target_include_directories(tenfoot-shell PRIVATE ${LIRC_CLIENT_INCLUDE_DIR})
-        target_link_libraries(tenfoot-shell PRIVATE ${LIRC_CLIENT_LIBRARY})
+        target_compile_definitions(ludex-launcher PRIVATE HAVE_LIRC=1)
+        target_include_directories(ludex-launcher PRIVATE ${LIRC_CLIENT_INCLUDE_DIR})
+        target_link_libraries(ludex-launcher PRIVATE ${LIRC_CLIENT_LIBRARY})
         message(STATUS "LIRC support enabled")
     else()
         message(WARNING "liblirc_client not found; IR support disabled")
@@ -162,7 +165,7 @@ if(GLSLANG_VALIDATOR)
         add_dependencies(tenfoot_shaders imgui-populate)
     endif()
 
-    add_dependencies(tenfoot-shell tenfoot_shaders)
+    add_dependencies(ludex-launcher tenfoot_shaders)
 else()
     message(FATAL_ERROR
         "glslangValidator no encontrado.\n"

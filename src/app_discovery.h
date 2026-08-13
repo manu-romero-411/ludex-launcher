@@ -10,7 +10,7 @@ struct App {
     std::string name;
     std::vector<std::string> cmd;
     std::filesystem::path icon_path;
-    int icon_texture_id = -1;
+    void* icon_texture = nullptr;
 };
 
 std::string displayNameFromStem(std::string stem);

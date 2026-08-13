@@ -85,7 +85,7 @@ static std::vector<App> discoverWebapps(const Config& cfg) {
 
     std::error_code ec;
     if (!std::filesystem::is_directory(cfg.apps_dir, ec)) {
-        std::cerr << "[tenfoot-shell] APPS_DIR no existe: "
+        std::cerr << "[ludex-launcher] APPS_DIR no existe: "
                   << cfg.apps_dir << std::endl;
         return apps;
     }
@@ -104,7 +104,7 @@ static std::vector<App> discoverWebapps(const Config& cfg) {
     for (const auto& path : entries) {
         std::ifstream f(path);
         if (!f) {
-            std::cerr << "[tenfoot-shell] no se pudo leer "
+            std::cerr << "[ludex-launcher] no se pudo leer "
                       << path << std::endl;
             continue;
         }
@@ -115,7 +115,7 @@ static std::vector<App> discoverWebapps(const Config& cfg) {
         std::string url = trim(buffer.str());
 
         if (url.empty()) {
-            std::cerr << "[tenfoot-shell] " << path
+            std::cerr << "[ludex-launcher] " << path
                       << " está vacío, se ignora" << std::endl;
             continue;
         }

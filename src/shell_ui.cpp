@@ -46,6 +46,46 @@ void drawShellImGui(
 ) {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
+    // ---- fondo (wallpaper con cover-crop + overlay) ----
+    ImDrawList* bg = ImGui::GetBackgroundDrawList();
+    const ImVec2 screen = viewport->WorkSize;
+
+    if (state.wallpaper_texture && state.wallpaper_w > 0 && state.wallpaper_h > 0) {
+        float sw = screen.x;
+        float sh = screen.y;
+        float iw = static_cast<float>(state.wallpaper_w);
+        float ih = static_cast<float>(state.wallpaper_h);
+
+        // background-size: cover
+        float scale = std::max(sw / iw, sh / ih);
+        float vis_w = sw / scale;
+        float vis_h = sh / scale;
+
+        ImVec2 uv0((iw - vis_w) * 0.5f / iw, (ih - vis_h) * 0.5f / ih);
+        ImVec2 uv1(uv0.x + vis_w / iw, uv0.y + vis_h / ih);
+
+        bg->AddImage(
+            static_cast<ImTextureID>(state.wallpaper_texture),
+            ImVec2(0.0f, 0.0f),
+            screen,
+            uv0,
+            uv1
+        );
+
+        // OVERLAY_ALPHA = 90, igual que en el Python
+        bg->AddRectFilled(
+            ImVec2(0.0f, 0.0f),
+            screen,
+            IM_COL32(0, 0, 0, 90)
+        );
+    } else {
+        bg->AddRectFilled(
+            ImVec2(0.0f, 0.0f),
+            screen,
+            IM_COL32(18, 18, 20, 255)
+        );
+    }
+
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
 
@@ -56,7 +96,7 @@ void drawShellImGui(
         ImGuiWindowFlags_NoScrollWithMouse |
         ImGuiWindowFlags_NoScrollbar;
 
-    ImGui::Begin("##tenfoot-shell", nullptr, flags);
+    ImGui::Begin("##ludex-launcher", nullptr, flags);
 
     drawClock(viewport);
 
@@ -119,6 +159,22 @@ void drawShellImGui(
 
         draw_list->AddRectFilled(min, max, color, 16.0f);
 
+        // ---- icono de la app ----
+        if (app.icon_texture) {
+            float icon_size = tile_w * 0.5f;
+
+            ImVec2 center(
+                min.x + tile_w * 0.5f,
+                min.y + tile_h * 0.5f - 10.0f
+            );
+
+            draw_list->AddImage(
+                static_cast<ImTextureID>(app.icon_texture),
+                ImVec2(center.x - icon_size * 0.5f, center.y - icon_size * 0.5f),
+                ImVec2(center.x + icon_size * 0.5f, center.y + icon_size * 0.5f)
+            );
+        }
+        // ---- fin icono ----
         ImVec2 text_size = ImGui::CalcTextSize(app.name.c_str());
 
         if (selected) {

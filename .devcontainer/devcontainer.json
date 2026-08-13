@@ -1,5 +1,5 @@
 {
-    "name": "tenfoot-shell-cpp-debian13",
+    "name": "ludex-launcher-cpp-debian13",
     "build": {
         "dockerfile": "../Dockerfile",
         "context": ".."

@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "tenfoot-shell (GDB)",
+            "name": "ludex-launcher (GDB)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/tenfoot-shell",
+            "program": "${workspaceFolder}/build/ludex-launcher",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
