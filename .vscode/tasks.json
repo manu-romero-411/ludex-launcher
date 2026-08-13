@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "build",
+                "-G",
+                "Ninja",
+                "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "cmake configure",
+            "problemMatcher": []
+        },
+        {
+            "label": "run",
+            "type": "shell",
+            "command": "./build/tenfoot-shell",
+            "dependsOn": "build",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+{
+    "cmake.generator": "Ninja",
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureArgs": [
+        "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    ],
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--background-index",
+        "--clang-tidy"
+    ],
+    "files.associations": {
+        "*.h": "cpp",
+        "*.hpp": "cpp",
+        "*.cpp": "cpp"
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "tenfoot-shell (GDB)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tenfoot-shell",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [
+                {
+                    "name": "SDL_VIDEODRIVER",
+                    "value": "wayland"
+                },
+                {
+                    "name": "TENFOOT_APPS_DIR",
+                    "value": "/var/penguin/juegos/retrobox/resources/apps"
+                },
+                {
+                    "name": "TENFOOT_WALLPAPER_DIR",
+                    "value": "/var/penguin/imagenes/fondos"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

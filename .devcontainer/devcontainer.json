@@ -1,0 +1,30 @@
+{
+    "name": "tenfoot-shell-cpp-debian13",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
+    "overrideCommand": true,
+    "remoteUser": "root",
+    "runArgs": [
+        "--device=/dev/dri",
+        "--device=/dev/input",
+        "--group-add",
+        "video",
+        "--group-add",
+        "input"
+    ],
+    "containerEnv": {
+        "SDL_VIDEODRIVER": "wayland",
+        "XDG_SESSION_TYPE": "wayland"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd"
+            ]
+        }
+    }
+}
