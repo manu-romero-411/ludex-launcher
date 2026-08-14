@@ -91,9 +91,12 @@ int main(int argc, char **argv) {
       return;
     }
 
-    std::filesystem::path ccfg = input.writeControllersConfig(runtimeDir());
+    std::string ccfg_str = input.controllersConfigString();
+    std::filesystem::path ccfg_file =
+        input.writeControllersConfig(runtimeDir());
+
     std::vector<std::string> cmd =
-        buildBackendCommand(*b, app.run, app.webapp_path, ccfg);
+        buildBackendCommand(*b, app.run, app.webapp_path, ccfg_str, ccfg_file);
     if (cmd.empty())
       return;
 
@@ -111,7 +114,7 @@ int main(int argc, char **argv) {
       SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
       backends.loadAll(); // recoge backends nuevos
       shell.refresh(cfg, backends);
-      loadShellAssets(*renderer, shell, cfg, sw, sh); 
+      loadShellAssets(*renderer, shell, cfg, sw, sh);
     };
     launchApp(cmd, hooks);
   };
@@ -125,11 +128,20 @@ int main(int argc, char **argv) {
   actions.poweroff = [&] {
     launchApp({"echo", "systemctl", "poweroff"}, LaunchHooks{});
   };
-  actions.reboot = [&] { launchApp({"echo", "systemctl", "reboot"}, LaunchHooks{}); };
-  actions.suspend = [&] { launchApp({"echo", "systemctl", "suspend"}, LaunchHooks{}); };
+  actions.reboot = [&] {
+    launchApp({"echo", "systemctl", "reboot"}, LaunchHooks{});
+  };
+  actions.suspend = [&] {
+    launchApp({"echo", "systemctl", "suspend"}, LaunchHooks{});
+  };
   actions.player_status = [&] { return input.playerStatus(); };
   actions.reload_ui_icons = [&] { loadUiIcons(*renderer, shell, cfg, sh); };
   auto handleAction = [&](UiAction a) {
+    if (shell.show_controllers) {
+      controllersInput(shell, cfg, actions, a);
+      return;
+    }
+
     if (shell.show_settings || shell.show_power) {
       panelInput(shell, cfg, actions, a);
       return;
@@ -162,12 +174,17 @@ int main(int argc, char **argv) {
     case UiAction::Select:
       if (shell.menu_open) {
         switch (shell.menu_selected) {
-        case 0:
+        case 0: // CONFIGURACIÓN
           actions.open_settings();
           break;
-        case 1:
+        case 1: // CONTROLLERS
+          if (actions.open_controllers)
+            actions.open_controllers();
+          break;
+        case 2: // SALIR
           want_quit = true;
           break;
+        case 3: // SHUTDOWN
         default:
           shell.show_power = true;
           shell.menu_open = false;
@@ -191,7 +208,23 @@ int main(int argc, char **argv) {
       break;
     }
   };
+  auto guidsFromCfg = [](const Config &c) {
+    std::vector<std::string> v;
+    for (int i = 0; i < Config::MAX_PLAYERS; ++i)
+      v.push_back(c.controller_guid[i]);
+    return v;
+  };
 
+  input.applyAssignment(guidsFromCfg(cfg)); // tras input.init()
+
+  actions.open_controllers = [&] {
+    shell.show_controllers = true;
+    shell.menu_open = false;
+    shell.controllers_focus = 0;
+    shell.controller_pick_player = -1;
+  };
+  actions.apply_controllers = [&] { input.applyAssignment(guidsFromCfg(cfg)); };
+  actions.devices = [&] { return input.devices(); };
   Uint64 last_time = SDL_GetPerformanceCounter();
 
   while (running) {
@@ -235,10 +268,7 @@ int main(int argc, char **argv) {
           handleAction(UiAction::Select);
           break;
         case SDLK_ESCAPE:
-          if (shell.show_settings)
-            shell.show_settings = false;
-          else if (shell.menu_open)
-            shell.menu_open = false;
+          handleAction(UiAction::Back);
           break;
         case SDLK_F1:
         case SDLK_HOME:
@@ -261,16 +291,15 @@ int main(int argc, char **argv) {
     }
 
     // ---- MANDO (UiInput desde InputManager) ----
+    input.update(); // <-- AÑADIR: genera eventos de hold/repetición
     UiInput ui;
-    input.update();
-
     while (input.poll(ui)) {
-      if (ui.player != cfg.active_player)
+      if (!cfg.all_players_ui && ui.player != cfg.active_player)
         continue;
       handleAction(ui.action);
     }
 
-    if (!shell.show_settings && !shell.show_power) {
+    if (!shell.show_settings && !shell.show_power && !shell.show_controllers) {
       shell.update(dt, cfg);
     }
 

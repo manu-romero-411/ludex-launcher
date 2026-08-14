@@ -25,7 +25,7 @@ void ShellState::nav(int dy) {
 }
 
 void ShellState::navMenu(int dy) {
-    menu_selected = std::clamp(menu_selected + dy, 0, 2);
+    menu_selected = std::clamp(menu_selected + dy, 0, 3);
 }
 
 void ShellState::pickNextWallpaperTarget(WallpaperLayer& layer, float zoom_max) {

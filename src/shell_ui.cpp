@@ -128,6 +128,86 @@ static void *uiIcon(const UiIcons &ic, int idx) {
   }
 }
 
+static std::string
+assignmentLabel(const Config &cfg,
+                const std::vector<InputManager::DeviceInfo> &devs, int p) {
+  if (cfg.controller_guid[p].empty())
+    return "DEFAULT";
+  for (const auto &d : devs)
+    if (d.guid == cfg.controller_guid[p])
+      return "#" + std::to_string(d.sdl_index) + " " + d.name;
+  return "OFFLINE (" + cfg.controller_name[p] + ")";
+}
+
+void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
+                      UiAction a) {
+  if (!st.show_controllers)
+    return;
+  auto devs = actions.devices ? actions.devices()
+                              : std::vector<InputManager::DeviceInfo>{};
+
+  if (st.controller_pick_player < 0) {
+    const int count = 9; // 8 jugadores + BACK
+    int &f = st.controllers_focus;
+    switch (a) {
+    case UiAction::Up:
+      f = (f - 1 + count) % count;
+      break;
+    case UiAction::Down:
+      f = (f + 1) % count;
+      break;
+    case UiAction::Select:
+      if (f < 8) {
+        st.controller_pick_player = f;
+        st.controller_pick_focus = 0;
+      } else
+        st.show_controllers = false;
+      break;
+    case UiAction::Back:
+    case UiAction::Guide:
+      st.show_controllers = false;
+      break;
+    default:
+      break;
+    }
+  } else {
+    const int rows = 1 + (int)devs.size();
+    const int count = rows + 1;
+    int &f = st.controller_pick_focus;
+    switch (a) {
+    case UiAction::Up:
+      f = (f - 1 + count) % count;
+      break;
+    case UiAction::Down:
+      f = (f + 1) % count;
+      break;
+    case UiAction::Select:
+      if (f < rows) {
+        int p = st.controller_pick_player;
+        if (f == 0) {
+          cfg.controller_guid[p].clear();
+          cfg.controller_name[p].clear();
+        } else {
+          cfg.controller_guid[p] = devs[f - 1].guid;
+          cfg.controller_name[p] = devs[f - 1].name;
+        }
+        if (actions.apply_controllers)
+          actions.apply_controllers();
+        cfg.save(cfg.ini_path);
+        st.controller_pick_player = -1;
+      } else
+        st.controller_pick_player = -1;
+      break;
+    case UiAction::Back:
+    case UiAction::Guide:
+      st.controller_pick_player = -1;
+      break;
+    default:
+      break;
+    }
+  }
+}
+
 /* ================================================================
  * Elementos fijos: reloj, fades de borde, menú pequeño de abajo, hints
  * ================================================================ */
@@ -173,8 +253,6 @@ static void drawClock(const Config &cfg, const ImGuiViewport *vp,
   ImGui::PopFont();
 }
 
-
-
 static void drawEdgeFades(const Config &cfg, float W, float H) {
   ImDrawList *dl = ImGui::GetWindowDrawList();
   int a = (int)std::clamp(cfg.edge_fade_alpha, 0.0f, 255.0f);
@@ -210,15 +288,15 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
 
   float menu_h = H * cfg.menu_h_pct;
   float menu_w = W * cfg.tile_sel_w_pct;
-  float total = menu_h * 3.0f;
+  float total = menu_h * 4.0f;
   float y_base = H - total * state.menu_anim;
 
-  static const char *labels[3] = {"CONFIGURACI\xC3\x93N", "SALIR",
-                                  "SHUTDOWN..."};
-  void *icons[3] = {state.ui_icons.settings, state.ui_icons.exit,
-                    state.ui_icons.shutdown};
+  static const char *labels[4] = {"CONFIGURACI\xC3\x93N", "CONTROLLERS",
+                                  "SALIR", "SHUTDOWN..."};
+  void *icons[4] = {state.ui_icons.settings, state.ui_icons.gamepad,
+                    state.ui_icons.exit, state.ui_icons.shutdown};
 
-  for (int m = 0; m < 3; ++m) {
+  for (int m = 0; m < 4; ++m) {
     float y0 = y_base + m * menu_h;
     ImVec2 min(left ? 0.0f : W - menu_w, y0);
     ImVec2 max(min.x + menu_w, y0 + menu_h);
@@ -233,7 +311,10 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
       if (ImGui::IsItemClicked()) {
         if (m == 0)
           actions.open_settings();
-        else if (m == 1)
+        else if (m == 1) {
+          if (actions.open_controllers)
+            actions.open_controllers();
+        } else if (m == 2)
           actions.quit();
         else
           actions.poweroff();
@@ -281,6 +362,11 @@ static void drawHints(const ShellState &state, const Config &cfg,
             {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
             {ic.accept, "A", "OK"},
             {ic.back, "B", "BACK"}};
+  } else if (state.show_settings || state.show_controllers) {
+    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
+            {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
+            {ic.accept, "A", "OK"},
+            {ic.back, "B", "BACK"}};
   } else if (state.show_power) {
     segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
             {ic.accept, "A", "ACCEPT"},
@@ -289,6 +375,7 @@ static void drawHints(const ShellState &state, const Config &cfg,
     segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
             {ic.accept, "A", "ACCEPT"},
             {ic.back, "B / HOME", "CLOSE"}};
+
   } else {
     segs = {{horiz ? ic.nav_h : ic.nav_v, horiz ? "LEFT/RIGHT" : "UP/DOWN",
              "NAVIGATE"},
@@ -460,9 +547,14 @@ const SRow kSettingsRows[] = {
          a.reload_ui_icons();
      },
      0},
-        {"GO BACK", false, nullptr, nullptr,
+    {"ALL PLAYERS CONTROL UI", true,
+     [](const Config &c) -> std::string {
+       return c.all_players_ui ? "YES" : "NO";
+     },
+     [](Config &c, int) { c.all_players_ui = !c.all_players_ui; }, nullptr, 0},
+    {"GO BACK", false, nullptr, nullptr,
      [](ShellState &s, Config &c, const ShellActions &) {
-       c.save(c.ini_path);   // <-- guardar al salir
+       c.save(c.ini_path); // <-- guardar al salir
        s.show_settings = false;
      },
      0},
@@ -553,6 +645,10 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
   ImDrawList *dl = ImGui::GetWindowDrawList();
+
+  // BLOQUEAR clicks de fondo
+  ImGui::SetCursorScreenPos(ImVec2(0, 0));
+  ImGui::InvisibleButton("##panel_bg", ImVec2(W, H));
 
   bool light = (cfg.theme == "light");
 
@@ -678,6 +774,120 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
   ImGui::PopFont();
 }
 
+static void drawControllersPanel(ShellState &st, Config &cfg,
+                                 const ShellActions &actions) {
+  const ImGuiViewport *vp = ImGui::GetMainViewport();
+  float W = vp->WorkSize.x, H = vp->WorkSize.y;
+  ImDrawList *dl = ImGui::GetWindowDrawList();
+
+  // BLOQUEAR clicks de fondo
+  ImGui::SetCursorScreenPos(ImVec2(0, 0));
+  ImGui::InvisibleButton("##controllers_bg", ImVec2(W, H));
+
+  bool light = cfg.theme == "light";
+
+  ImU32 fade_col =
+      light ? IM_COL32(240, 240, 240, 210) : IM_COL32(0, 0, 0, 210);
+  ImU32 panel_bg =
+      light ? IM_COL32(250, 250, 252, 250) : IM_COL32(30, 32, 40, 250);
+  ImU32 panel_title =
+      light ? IM_COL32(230, 232, 240, 255) : IM_COL32(44, 47, 60, 255);
+  ImU32 row_focus =
+      light ? IM_COL32(210, 220, 240, 255) : IM_COL32(78, 82, 98, 255);
+  ImU32 text_main =
+      light ? IM_COL32(25, 25, 30, 255) : IM_COL32(230, 230, 230, 255);
+  ImU32 text_val =
+      light ? IM_COL32(40, 40, 50, 255) : IM_COL32(240, 240, 240, 255);
+  ImU32 border_col =
+      light ? IM_COL32(120, 125, 140, 255) : IM_COL32(150, 155, 170, 200);
+
+  dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H), fade_col);
+
+  auto devs = actions.devices ? actions.devices()
+                              : std::vector<InputManager::DeviceInfo>{};
+  bool picking = st.controller_pick_player >= 0;
+
+  std::vector<std::pair<std::string, std::string>> rows;
+  std::string title;
+  if (!picking) {
+    title = "CONTROLLER ASSIGNMENT";
+    for (int p = 0; p < 8; ++p)
+      rows.push_back({"PLAYER " + std::to_string(p + 1) + " PAD",
+                      assignmentLabel(cfg, devs, p)});
+  } else {
+    title = "PAD FOR PLAYER " + std::to_string(st.controller_pick_player + 1);
+    rows.push_back({"DEFAULT", ""});
+    for (const auto &d : devs)
+      rows.push_back({"#" + std::to_string(d.sdl_index) + " " + d.name, ""});
+  }
+
+  int list_count = (int)rows.size();
+  int focus = picking ? st.controller_pick_focus : st.controllers_focus;
+
+  float row_h = H * 0.055f, title_h = H * 0.09f, footer_h = row_h * 1.6f;
+  float pw = W * 0.56f;
+  float ph = title_h + list_count * row_h + footer_h;
+  float px = (W - pw) * 0.5f, py = (H - ph) * 0.5f, pad = W * 0.012f;
+
+  dl->AddRectFilled(ImVec2(px, py), ImVec2(px + pw, py + ph), panel_bg, 10.0f);
+  dl->AddRectFilled(ImVec2(px, py), ImVec2(px + pw, py + title_h), panel_title,
+                    10.0f, ImDrawFlags_RoundCornersTop);
+
+  ImGui::PushFont(g_font_tile);
+  ImVec2 tt = ImGui::CalcTextSize(title.c_str());
+  dl->AddText(ImVec2(px + (pw - tt.x) * 0.5f, py + (title_h - tt.y) * 0.5f),
+              text_main, title.c_str());
+
+  for (int i = 0; i < list_count; ++i) {
+    float y0 = py + title_h + i * row_h;
+    if (i == focus)
+      dl->AddRectFilled(ImVec2(px, y0), ImVec2(px + pw, y0 + row_h), row_focus);
+
+    ImGui::PushID(9300 + i);
+    ImGui::SetCursorScreenPos(ImVec2(px, y0));
+    ImGui::InvisibleButton("##crow", ImVec2(pw, row_h));
+    if (ImGui::IsItemClicked()) {
+      if (picking)
+        st.controller_pick_focus = i;
+      else
+        st.controllers_focus = i;
+      controllersInput(st, cfg, actions, UiAction::Select);
+    }
+    ImGui::PopID();
+
+    dl->AddText(ImVec2(px + pad, y0 + (row_h - tt.y) * 0.5f), text_main,
+                rows[i].first.c_str());
+    if (!rows[i].second.empty()) {
+      ImVec2 vs = ImGui::CalcTextSize(rows[i].second.c_str());
+      dl->AddText(ImVec2(px + pw - pad - vs.x, y0 + (row_h - vs.y) * 0.5f),
+                  text_val, rows[i].second.c_str());
+    }
+  }
+
+  // BACK
+  float bh = row_h * 0.95f, bw = pw * 0.24f;
+  ImVec2 bmin(px + (pw - bw) * 0.5f,
+              py + title_h + list_count * row_h + (footer_h - bh) * 0.5f);
+  ImVec2 bmax(bmin.x + bw, bmin.y + bh);
+  if (focus == list_count)
+    dl->AddRectFilled(bmin, bmax, row_focus, 6);
+  dl->AddRect(bmin, bmax, border_col, 6, 0, 2);
+  ImVec2 bs = ImGui::CalcTextSize("BACK");
+  dl->AddText(ImVec2(bmin.x + (bw - bs.x) * 0.5f, bmin.y + (bh - bs.y) * 0.5f),
+              text_main, "BACK");
+  ImGui::PushID(9400);
+  ImGui::SetCursorScreenPos(bmin);
+  ImGui::InvisibleButton("##cback", ImVec2(bw, bh));
+  if (ImGui::IsItemClicked()) {
+    if (picking)
+      st.controller_pick_player = -1;
+    else
+      st.show_controllers = false;
+  }
+  ImGui::PopID();
+  ImGui::PopFont();
+}
+
 static void drawWallpaperLayer(ImDrawList *dl, float W, float H,
                                const WallpaperLayer &L, ImU32 tint) {
   if (!L.texture || L.w <= 0 || L.h <= 0)
@@ -704,19 +914,24 @@ static void drawWallpaperLayer(ImDrawList *dl, float W, float H,
 }
 
 /* Silueta de mando de reserva (si no existe gamepad.svg) */
-static void drawGamepadGlyph(ImDrawList *dl, ImVec2 min, ImVec2 max, ImU32 col) {
-    float w = max.x - min.x, h = max.y - min.y;
-    ImVec2 bmin(min.x, min.y + h * 0.22f);
-    ImVec2 bmax(max.x, max.y - h * 0.10f);
-    dl->AddRectFilled(bmin, bmax, col, h * 0.28f);
-    dl->AddCircleFilled(ImVec2(min.x + w * 0.20f, min.y + h * 0.28f), h * 0.16f, col);
-    dl->AddCircleFilled(ImVec2(max.x - w * 0.20f, min.y + h * 0.28f), h * 0.16f, col);
+static void drawGamepadGlyph(ImDrawList *dl, ImVec2 min, ImVec2 max,
+                             ImU32 col) {
+  float w = max.x - min.x, h = max.y - min.y;
+  ImVec2 bmin(min.x, min.y + h * 0.22f);
+  ImVec2 bmax(max.x, max.y - h * 0.10f);
+  dl->AddRectFilled(bmin, bmax, col, h * 0.28f);
+  dl->AddCircleFilled(ImVec2(min.x + w * 0.20f, min.y + h * 0.28f), h * 0.16f,
+                      col);
+  dl->AddCircleFilled(ImVec2(max.x - w * 0.20f, min.y + h * 0.28f), h * 0.16f,
+                      col);
 }
 
-static void drawPlayerIndicators(const ShellState &state, const Config &cfg,
+static void
+drawPlayerIndicators(const ShellState &state, const Config &cfg,
                      const std::vector<InputManager::PlayerStatus> &players,
                      const ImGuiViewport *vp) {
-  if (players.empty()) return;
+  if (players.empty())
+    return;
 
   ImDrawList *dl = ImGui::GetWindowDrawList();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
@@ -738,17 +953,16 @@ static void drawPlayerIndicators(const ShellState &state, const Config &cfg,
   float x_start = gp_right ? (W - margin - total) : margin;
   float y = gp_top ? margin : (H - margin - s);
 
-    for (int i = 0; i < n; ++i) {
-        ImU32 col = players[i].active ? active : idle;
-        float x = x_start + i * (s + gap);
-        if (state.ui_icons.gamepad) {
-            dl->AddImage((ImTextureID)state.ui_icons.gamepad,
-                         ImVec2(x, y), ImVec2(x + s, y + s),
-                         ImVec2(0, 0), ImVec2(1, 1), col);
-        } else {
-            drawGamepadGlyph(dl, ImVec2(x, y), ImVec2(x + s, y + s), col);
-        }
+  for (int i = 0; i < n; ++i) {
+    ImU32 col = players[i].active ? active : idle;
+    float x = x_start + i * (s + gap);
+    if (state.ui_icons.gamepad) {
+      dl->AddImage((ImTextureID)state.ui_icons.gamepad, ImVec2(x, y),
+                   ImVec2(x + s, y + s), ImVec2(0, 0), ImVec2(1, 1), col);
+    } else {
+      drawGamepadGlyph(dl, ImVec2(x, y), ImVec2(x + s, y + s), col);
     }
+  }
 }
 
 /* ================================================================
@@ -759,7 +973,8 @@ void drawShellImGui(ShellState &state, const Config &cfg,
                     const ShellActions &actions) {
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
-  bool panel_open = state.show_settings || state.show_power;
+  bool panel_open =
+      state.show_settings || state.show_power || state.show_controllers;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::SetNextWindowPos(vp->WorkPos);
@@ -967,8 +1182,11 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   }
 
   if (panel_open) {
-    drawPanel(state, const_cast<Config &>(cfg), actions, state.show_settings);
-  } else {
+    if (state.show_controllers)
+      drawControllersPanel(state, const_cast<Config &>(cfg), actions);
+    else
+      drawPanel(state, const_cast<Config &>(cfg), actions, state.show_settings);
+  } else { // <-- ESTE BLOQUE FALTABA
     if (state.menu_anim > 0.001f) {
       dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
                         IM_COL32(0, 0, 0, (int)(130 * state.menu_anim)));
@@ -989,4 +1207,3 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   ImGui::End();
   ImGui::PopStyleVar();
 }
-

@@ -16,9 +16,13 @@ struct ShellActions {
     std::function<void()> suspend;
     std::function<std::vector<InputManager::PlayerStatus>()> player_status;
     std::function<void()> reload_ui_icons;
+    std::function<void()> open_controllers;
+    std::function<void()> apply_controllers;
+    std::function<std::vector<InputManager::DeviceInfo>()> devices;
 };
 
 void panelInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);
+void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);  // <-- AÑADIR
 
 void loadShellFonts(const Config& cfg, float screen_h);
 

@@ -158,11 +158,16 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
   theme = ini.get(S, "theme", theme); // load
   help_icons = ini.get(S, "help_icons", help_icons);
-
+  all_players_ui =
+      ini.getInt(S, "all_players_ui", all_players_ui ? 1 : 0) != 0; // load
   if (help_icons != "xbox" && help_icons != "playstation" &&
       help_icons != "none")
     help_icons = "xbox";
-
+  for (int i = 0; i < MAX_PLAYERS; ++i) {
+      std::string k = "p" + std::to_string(i + 1);
+      controller_guid[i] = ini.get("controllers", k + "_guid", "");
+      controller_name[i] = ini.get("controllers", k + "_name", "");
+  }
   icons_dir = ini.get(S, "icons_dir", "");
   {
     auto isdir = [](const std::filesystem::path &p) {
@@ -258,6 +263,12 @@ bool Config::save(const std::filesystem::path &path) const {
   ini.set(S, "help_icons", help_icons);
   if (!icons_dir.empty())
     ini.set(S, "icons_dir", icons_dir.string());
+  ini.set(S, "all_players_ui", all_players_ui ? "1" : "0"); // save
+  for (int i = 0; i < MAX_PLAYERS; ++i) {
+      std::string k = "p" + std::to_string(i + 1);
+      ini.set("controllers", k + "_guid", controller_guid[i]);
+      ini.set("controllers", k + "_name", controller_name[i]);
+  }
   return ini.save(path);
 }
 

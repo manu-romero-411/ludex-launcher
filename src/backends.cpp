@@ -115,16 +115,18 @@ std::vector<std::string> buildBackendCommand(
     const Backend& backend,
     const std::string& run,
     const std::filesystem::path& webapp_path,
-    const std::filesystem::path& controllers_config)
+    const std::string& controllers_config,
+    const std::filesystem::path& controllers_file)
 {
     std::string cmd = backend.exec_start;
 
     cmd = replaceAll(cmd, "%URL%", run);
     cmd = replaceAll(cmd, "%RUN%", run);
     cmd = replaceAll(cmd, "%APP%", quoteIfNeeded(webapp_path.string()));
-    cmd = replaceAll(cmd, "%CONTROLLERSCONFIG%",
-                     controllers_config.empty()
-                         ? "" : quoteIfNeeded(controllers_config.string()));
+    cmd = replaceAll(cmd, "%CONTROLLERSCONFIG%", controllers_config);
+    cmd = replaceAll(cmd, "%CONTROLLERSFILE%",
+                     controllers_file.empty()
+                         ? "" : quoteIfNeeded(controllers_file.string()));
 
     return tokenize(cmd);
 }

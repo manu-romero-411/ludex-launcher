@@ -1,0 +1,7 @@
+[ludex-element]
+name=tests
+backend=test
+icon=
+tile_type=flat
+color1=#011122
+icon_color=#ffffff

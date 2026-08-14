@@ -57,7 +57,10 @@ struct ShellState {
     void update(float dt, const Config& cfg);
 
     const App* selectedApp() const;
-
+    bool show_controllers = false;
+    int controllers_focus = 0;
+    int controller_pick_player = -1;   // >=0 => diálogo de selección abierto
+    int controller_pick_focus = 0;
 private:
     void pickNextWallpaperTarget(WallpaperLayer& layer, float zoom_max);
 

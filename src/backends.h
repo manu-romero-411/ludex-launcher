@@ -29,4 +29,5 @@ std::vector<std::string> buildBackendCommand(
     const Backend& backend,
     const std::string& run,
     const std::filesystem::path& webapp_path,
-    const std::filesystem::path& controllers_config);
+    const std::string& controllers_config,                    // estilo ES inline
+    const std::filesystem::path& controllers_file = {});      // %CONTROLLERSFILE%
