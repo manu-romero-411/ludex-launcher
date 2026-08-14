@@ -104,6 +104,9 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
   theme = ini.get(S, "theme", theme); // load
   help_icons = ini.get(S, "help_icons", help_icons);
+  
+  music_dir = ini.get(S, "music_dir", "");
+
   icon_vert_scale = ini.getFloat(S, "icon_vert_scale", icon_vert_scale);
   wallpaper_rotate =
       ini.getInt(S, "wallpaper_rotate", wallpaper_rotate ? 1 : 0) != 0;
@@ -215,6 +218,11 @@ bool Config::save(const std::filesystem::path &path) const {
     ini.set("controllers", k + "_name", controller_name[i]);
   }
   ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "1" : "0");
+  
+  if (!music_dir.empty()) {
+    ini.set(S, "music_dir", music_dir.string());
+}
+
   return ini.save(path);
 }
 

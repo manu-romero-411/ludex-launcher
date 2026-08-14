@@ -1,8 +1,7 @@
 #include "input_manager.h"
 
 #include <algorithm>
-#include <fstream> // <-- AÑADIR
-#include <sstream>
+#include <fstream>
 
 bool InputManager::init() {
   if (SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0) {

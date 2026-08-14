@@ -49,6 +49,7 @@ struct Config {
   std::string
       controller_guid[MAX_PLAYERS]; // vacío = DEFECTO (orden de conexión)
   std::string controller_name[MAX_PLAYERS];
+  std::filesystem::path music_dir;
 };
 
 Config loadConfig();

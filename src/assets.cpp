@@ -89,7 +89,6 @@ void loadShellAssets(Renderer &renderer, ShellState &state, const Config &cfg,
     }
   }
 
-  // >>> ESTA llamada es la que faltaba en tu archivo <<<
   loadAllWallpapers(renderer, state, cfg, screen_w, screen_h);
 }
 

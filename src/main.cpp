@@ -8,6 +8,7 @@
 
 #include "app_discovery.h"
 #include "assets.h"
+#include "audio_manager.h"
 #include "backends.h"
 #include "config.h"
 #include "input_manager.h"
@@ -16,6 +17,7 @@
 #include "renderer.h"
 #include "shell_state.h"
 #include "shell_ui.h"
+#include "util.h"
 
 static std::filesystem::path runtimeDir() {
   if (const char *rd = std::getenv("XDG_RUNTIME_DIR"))
@@ -47,13 +49,14 @@ static SDL_Surface *loadWindowIcon(const std::filesystem::path &icons_dir) {
 }
 
 int main(int argc, char **argv) {
-  (void)argc; (void)argv;
+  (void)argc;
+  (void)argv;
 
   std::setlocale(LC_ALL, "");
 
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
   SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
-  SDL_SetHint(SDL_HINT_APP_NAME, "ludex");   // app_id de Wayland -> ludex.desktop
+  SDL_SetHint(SDL_HINT_APP_NAME, "ludex"); // app_id de Wayland -> ludex.desktop
 
   // Wayland por defecto; el env del usuario manda; fallback X11
   const Uint32 sdl_flags =
@@ -72,11 +75,11 @@ int main(int argc, char **argv) {
   }
   SDL_Log("[ludex] video driver: %s", SDL_GetCurrentVideoDriver());
 
-  SDL_Window *window = SDL_CreateWindow(
-      "ludex-launcher",
-      SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
-      SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
-          SDL_WINDOW_ALLOW_HIGHDPI);
+  SDL_Window *window =
+      SDL_CreateWindow("ludex-launcher", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
+                       SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
+                           SDL_WINDOW_ALLOW_HIGHDPI);
   if (!window) {
     std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
     SDL_Quit();
@@ -91,6 +94,33 @@ int main(int argc, char **argv) {
     SDL_FreeSurface(icon);
   }
 
+  // En main(), después de crear window y cargar config:
+  AudioManager audio;
+  if (!audio.init()) {
+    std::cerr << "Failed to initialize audio\n";
+  }
+
+  // Cargar música desde múltiples ubicaciones (en orden de prioridad):
+  std::vector<std::filesystem::path> music_dirs = {
+      cfg.music_dir, // del INI
+      util::exeDir() / "music",
+      std::filesystem::path(std::getenv("HOME") ? std::getenv("HOME") : "") /
+          ".config" / "ludex" / "music",
+      std::filesystem::path("/usr/share/ludex/music")};
+
+  for (const auto &dir : music_dirs) {
+    if (std::filesystem::exists(dir)) {
+      audio.loadMusicFromDirectory(dir);
+      break; // usar la primera que exista
+    }
+  }
+
+  // Cargar efectos de sonido:
+  std::filesystem::path sounds_dir = util::exeDir() / "resources" / "sounds";
+  audio.loadSoundEffects(sounds_dir);
+
+  // Iniciar música de fondo:
+  audio.startMusic();
 
   BackendRegistry backends;
   backends.loadAll();
@@ -143,6 +173,7 @@ int main(int argc, char **argv) {
 
     LaunchHooks hooks;
     hooks.before = [&] {
+      audio.stopMusic(); // detener música al lanzar app
       input.closeControllers();
       SDL_MinimizeWindow(window);
       SDL_HideWindow(window);
@@ -156,6 +187,7 @@ int main(int argc, char **argv) {
       backends.loadAll(); // recoge backends nuevos
       shell.refresh(cfg, backends);
       loadShellAssets(*renderer, shell, cfg, sw, sh);
+      audio.startMusic(); // reanudar música al volver
     };
     launchApp(cmd, hooks);
   };
@@ -187,28 +219,39 @@ int main(int argc, char **argv) {
     case UiAction::Left:
       if (shell.menu_open)
         shell.navMenu(-1);
-      else if (cfg.side == "top" || cfg.side == "bottom")
+      else if (cfg.side == "top" || cfg.side == "bottom") {
         shell.nav(-1);
+        audio.playScrollSound(); // sonido al navegar
+      }
+
       break;
     case UiAction::Right:
       if (shell.menu_open)
         shell.navMenu(1);
-      else if (cfg.side == "top" || cfg.side == "bottom")
+      else if (cfg.side == "top" || cfg.side == "bottom") {
         shell.nav(1);
+        audio.playScrollSound(); // sonido al navegar
+      }
+
       break;
     case UiAction::Up:
       if (shell.menu_open)
         shell.navMenu(-1);
-      else if (cfg.side == "left" || cfg.side == "right")
+      else if (cfg.side == "left" || cfg.side == "right") {
         shell.nav(-1);
+        audio.playScrollSound(); // sonido al navegar
+      }
       break;
     case UiAction::Down:
       if (shell.menu_open)
         shell.navMenu(1);
-      else if (cfg.side == "left" || cfg.side == "right")
+      else if (cfg.side == "left" || cfg.side == "right") {
         shell.nav(1);
+        audio.playScrollSound(); // sonido al navegar
+      }
       break;
     case UiAction::Select:
+      audio.playSelectSound(); // sonido al seleccionar
       if (shell.menu_open) {
         switch (shell.menu_selected) {
         case 0: // CONFIGURACIÓN
@@ -347,7 +390,7 @@ int main(int argc, char **argv) {
     renderer->drawShell(shell, cfg, actions);
     renderer->endFrame();
   }
-
+  audio.shutdown();
   freeShellAssets(*renderer, shell);
   renderer->shutdown();
   ir->shutdown();
