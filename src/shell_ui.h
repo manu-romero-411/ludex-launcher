@@ -22,7 +22,7 @@ struct ShellActions {
 };
 
 void panelInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);
-void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);  // <-- AÑADIR
+void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);
 
 void loadShellFonts(const Config& cfg, float screen_h);
 
