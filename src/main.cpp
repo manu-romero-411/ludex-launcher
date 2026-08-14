@@ -543,6 +543,19 @@ int main(int argc, char **argv) {
 
     if (want_quit)
       running = false;
+    if (!app_running && shell.pending_launch >= 0) {
+      int idx = shell.pending_launch;
+      shell.pending_launch = -1; // Limpiamos la petición inmediatamente
+
+      if (idx >= 0 && idx < (int)shell.apps.size()) {
+        actions.launch(shell.apps[idx]);
+
+        // Al volver de la app, reiniciamos el contador de tiempo.
+        // Esto evita un "dt" gigante que cause un salto brusco en las
+        // animaciones.
+        last_time = SDL_GetPerformanceCounter();
+      }
+    }
 
     renderer->beginFrame();
     renderer->drawShell(shell, cfg, actions);

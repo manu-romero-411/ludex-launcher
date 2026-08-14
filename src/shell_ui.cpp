@@ -954,7 +954,7 @@ public:
         tile_active = ImGui::IsItemActive();
         if (ImGui::IsItemClicked()) {
           if (t > 0.9f)
-            actions.launch(app);
+            state.pending_launch = row.idx;
           else
             state.selected = row.idx;
         }
