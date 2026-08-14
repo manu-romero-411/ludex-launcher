@@ -1,3 +1,4 @@
+
 #include "renderer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <SDL.h>

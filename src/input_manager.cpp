@@ -65,6 +65,7 @@ void InputManager::rescanControllers() {
   for (int i = 0; i < count; ++i) {
     addDeviceByIndex(i);
   }
+  recomputePlayers();
 }
 
 void InputManager::addDeviceByIndex(int device_index) {
@@ -224,7 +225,6 @@ bool InputManager::poll(UiInput &out) {
   queue_.pop();
   return true;
 }
-
 
 int InputManager::createOrFindSlotForGuid(const std::string &guid) {
   for (const auto &slot : slots_) {

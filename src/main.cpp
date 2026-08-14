@@ -1,3 +1,4 @@
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <imgui_impl_sdl2.h> // <-- IMPORTANTE: para alimentar a ImGui
@@ -56,11 +57,11 @@ int main(int argc, char **argv) {
 
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
   SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
-  SDL_SetHint(SDL_HINT_APP_NAME, "ludex"); // app_id de Wayland -> ludex.desktop
+  SDL_SetHint(SDL_HINT_APP_NAME, "ludex"); // app_id Wayland
 
-  // Wayland por defecto; el env del usuario manda; fallback X11
   const Uint32 sdl_flags =
       SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER;
+
   if (!std::getenv("SDL_VIDEODRIVER"))
     setenv("SDL_VIDEODRIVER", "wayland", 0);
 
@@ -73,13 +74,13 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
-  SDL_Log("[ludex] video driver: %s", SDL_GetCurrentVideoDriver());
 
   SDL_Window *window =
       SDL_CreateWindow("ludex-launcher", SDL_WINDOWPOS_UNDEFINED,
                        SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
                        SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
                            SDL_WINDOW_ALLOW_HIGHDPI);
+
   if (!window) {
     std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
     SDL_Quit();
@@ -152,7 +153,7 @@ int main(int argc, char **argv) {
   loadUiIcons(*renderer, shell, cfg, sh);
   bool running = true;
   bool want_quit = false;
-
+  bool app_running = false;
   ShellActions actions;
 
   actions.launch = [&](const App &app) {
@@ -173,21 +174,41 @@ int main(int argc, char **argv) {
 
     LaunchHooks hooks;
     hooks.before = [&] {
-      audio.stopMusic(); // detener música al lanzar app
+      audio.stopMusic();
+      app_running = true;
       input.closeControllers();
-      SDL_MinimizeWindow(window);
-      SDL_HideWindow(window);
+
+      // Renderizar un frame negro
+      renderer->beginFrame();
+      ImGui::NewFrame();
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+      ImGui::SetNextWindowPos(ImGui::GetMainViewport()->WorkPos);
+      ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
+      ImGui::Begin("##black", nullptr,
+                   ImGuiWindowFlags_NoDecoration |
+                       ImGuiWindowFlags_NoBackground);
+      ImDrawList *dl = ImGui::GetWindowDrawList();
+      dl->AddRectFilled(ImVec2(0, 0), ImGui::GetMainViewport()->WorkSize,
+                        IM_COL32(0, 0, 0, 255));
+      ImGui::End();
+      ImGui::PopStyleVar();
+      ImGui::Render();
+      renderer->endFrame();
+
       SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
     };
     hooks.after = [&] {
       input.rescanControllers();
-      SDL_ShowWindow(window);
+      app_running = false;
       SDL_RaiseWindow(window);
       SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-      backends.loadAll(); // recoge backends nuevos
-      shell.refresh(cfg, backends);
+      backends.loadAll();
+      shell.refreshAndFreeOldAssets(*renderer, cfg, backends);
       loadShellAssets(*renderer, shell, cfg, sw, sh);
-      audio.startMusic(); // reanudar música al volver
+      audio.startMusic();
+      shell.dragging = false;
+      shell.has_momentum = false;
+      shell.drag_velocity = 0.0f;
     };
     launchApp(cmd, hooks);
   };
@@ -315,11 +336,7 @@ int main(int argc, char **argv) {
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      // >>>>>> IMPRESCINDIBLE: alimentar a ImGui con los eventos <<<<<<
-      // Sin esto, el diálogo de configuración y cualquier widget de
-      // ImGui es ciego/sordo al ratón, teclado y mando.
-      ImGui_ImplSDL2_ProcessEvent(&event);
-
+      // SDL_QUIT siempre se respeta (cerrar ventana del SO)
       if (event.type == SDL_QUIT) {
         running = false;
         continue;
@@ -327,7 +344,15 @@ int main(int argc, char **argv) {
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         running = false;
+        continue;
       }
+
+      // Mientras la app hija corre: drenar y descartar TODO
+      if (app_running)
+        continue;
+
+      ImGui_ImplSDL2_ProcessEvent(&event);
+
       // ---- TECLADO ----
       if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
@@ -356,27 +381,173 @@ int main(int argc, char **argv) {
           break;
         case SDLK_F5:
           backends.loadAll();
-          shell.refresh(cfg, backends);
-          loadShellAssets(*renderer, shell, cfg, sw, sh);
+          shell.refreshAndFreeOldAssets(*renderer, cfg, backends);
+          // Solo recargar iconos de apps, NO wallpapers
+          {
+            int icon_max = (int)(sh * cfg.icon_sel_pct * 2.0f);
+            for (auto &app : shell.apps) {
+              if (!app.icon_path.empty() && !app.icon_texture) {
+                app.icon_texture = renderer->loadTextureFromFile(
+                    app.icon_path, nullptr, nullptr, icon_max,
+                    app.has_icon_tint ? &app.icon_tint : nullptr);
+              }
+            }
+          }
           break;
         case SDLK_w:
-          loadAllWallpapers(*renderer, shell, cfg, sw, sh);
+          shell.nextWallpaper();
+          break;
+        case SDLK_F6:
+          loadAllWallpapers(*renderer, shell, cfg, sw, sh); // relee del disco
           break;
         default:
           break;
         }
       }
+      // ---- MOUSE WHEEL (scroll en tiles) ----
+      if (event.type == SDL_MOUSEWHEEL) {
+        if (!shell.menu_open && !shell.show_settings && !shell.show_power &&
+            !shell.show_controllers) {
+          if (event.wheel.y != 0) {
+            int dy = (event.wheel.y > 0) ? -1 : 1;
+            shell.nav(dy);
+            audio.playScrollSound();
+          }
+        }
+      }
 
+      // ---- Estado estático para drag con threshold ----
+      // Necesario porque el evento MOUSEMOTION no lleva el botón de origen.
+      static bool mouse_down = false;
+      static float mouse_down_x = 0.0f, mouse_down_y = 0.0f;
+      static bool drag_active = false; // true solo tras superar threshold
+      static constexpr float DRAG_THRESHOLD =
+          12.0f; // píxeles antes de considerar drag
+
+      static float finger_down_x = 0.0f, finger_down_y = 0.0f;
+      static bool finger_down = false;
+      static bool touch_drag_active = false;
+
+      auto axisPos = [&](float px, float py) -> float {
+        return (cfg.side == "left" || cfg.side == "right") ? py : px;
+      };
+      auto startDragState = [&](float px, float py) {
+        float pos = axisPos(px, py);
+        shell.drag_start_pos = pos;
+        shell.drag_start_offset = shell.offset;
+        shell.drag_last_pos = pos;
+        shell.drag_last_time = SDL_GetTicks();
+        shell.drag_velocity = 0.0f;
+        shell.has_momentum = false;
+      };
+      auto doDrag = [&](float px, float py) {
+        float pos = axisPos(px, py);
+        float main_axis =
+            (cfg.side == "top" || cfg.side == "bottom") ? (float)sw : (float)sh;
+        float k = cfg.tile_sel_ratio;
+        float slot_size = main_axis / ((float)(cfg.visible_items - 1) + k);
+
+        float delta_px = pos - shell.drag_start_pos;
+        shell.offset = shell.drag_start_offset - delta_px / slot_size;
+
+        Uint32 now = SDL_GetTicks();
+        float dt_ms = (float)(now - shell.drag_last_time);
+        if (dt_ms > 1.0f) {
+          float px_delta = pos - shell.drag_last_pos;
+          // velocidad en unidades/segundo
+          shell.drag_velocity = -(px_delta / dt_ms) * 1000.0f / slot_size;
+        }
+        shell.drag_last_pos = pos;
+        shell.drag_last_time = now;
+      };
+      auto endDrag = [&]() {
+        shell.dragging = false;
+        shell.has_momentum = (std::fabs(shell.drag_velocity) > 2.0f);
+        if (!shell.has_momentum)
+          shell.drag_velocity = 0.0f;
+      };
+
+      // ---- MOUSE DRAG con threshold ----
+      if (event.type == SDL_MOUSEBUTTONDOWN &&
+          event.button.button == SDL_BUTTON_LEFT) {
+        if (!shell.menu_open && !shell.show_settings && !shell.show_power &&
+            !shell.show_controllers) {
+          mouse_down = true;
+          drag_active = false;
+          mouse_down_x = (float)event.button.x;
+          mouse_down_y = (float)event.button.y;
+          startDragState(mouse_down_x, mouse_down_y);
+        }
+      }
+      if (event.type == SDL_MOUSEBUTTONUP &&
+          event.button.button == SDL_BUTTON_LEFT) {
+        if (drag_active) {
+          endDrag();
+        }
+        mouse_down = false;
+        drag_active = false;
+      }
+      if (event.type == SDL_MOUSEMOTION) {
+        if (mouse_down && !drag_active) {
+          float dx = (float)event.motion.x - mouse_down_x;
+          float dy = (float)event.motion.y - mouse_down_y;
+          if (std::sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+            drag_active = true;
+            shell.dragging = true;
+          }
+        }
+        if (drag_active) {
+          doDrag((float)event.motion.x, (float)event.motion.y);
+        }
+      }
+
+      // ---- TOUCH DRAG con threshold ----
+      if (event.type == SDL_FINGERDOWN) {
+        if (!shell.menu_open && !shell.show_settings && !shell.show_power &&
+            !shell.show_controllers) {
+          finger_down = true;
+          touch_drag_active = false;
+          finger_down_x = event.tfinger.x * (float)sw;
+          finger_down_y = event.tfinger.y * (float)sh;
+          startDragState(finger_down_x, finger_down_y);
+        }
+      }
+      if (event.type == SDL_FINGERUP) {
+        if (touch_drag_active) {
+          endDrag();
+        }
+        finger_down = false;
+        touch_drag_active = false;
+      }
+      if (event.type == SDL_FINGERMOTION) {
+        float fx = event.tfinger.x * (float)sw;
+        float fy = event.tfinger.y * (float)sh;
+        if (finger_down && !touch_drag_active) {
+          float dx = fx - finger_down_x;
+          float dy = fy - finger_down_y;
+          if (std::sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+            touch_drag_active = true;
+            shell.dragging = true;
+          }
+        }
+        if (touch_drag_active) {
+          doDrag(fx, fy);
+        }
+      }
       input.handleEvent(event);
     }
 
     // ---- MANDO (UiInput desde InputManager) ----
-    input.update();
-    UiInput ui;
-    while (input.poll(ui)) {
-      if (!cfg.all_players_ui && ui.player != cfg.active_player)
-        continue;
-      handleAction(ui.action);
+
+    // ---- MANDO (UiInput desde InputManager) ----
+    if (!app_running) {
+      input.update();
+      UiInput ui;
+      while (input.poll(ui)) {
+        if (!cfg.all_players_ui && ui.player != cfg.active_player)
+          continue;
+        handleAction(ui.action);
+      }
     }
 
     if (!shell.show_settings && !shell.show_power && !shell.show_controllers) {

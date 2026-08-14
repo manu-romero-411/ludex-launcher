@@ -1,9 +1,11 @@
 #pragma once
 
+#include <SDL_stdinc.h>
 #include <vector>
 
 #include "app_discovery.h"
 #include "config.h"
+#include "renderer.h"
 
 struct WallpaperLayer {
   void *texture = nullptr;
@@ -30,12 +32,18 @@ struct UiIcons {
 
   void *byIndex(RowIcon icon) const {
     switch (icon) {
-      case RowIcon::Settings: return settings;
-      case RowIcon::Exit: return exit;
-      case RowIcon::Shutdown: return shutdown;
-      case RowIcon::Restart: return restart;
-      case RowIcon::Suspend: return suspend;
-      default: return nullptr;
+    case RowIcon::Settings:
+      return settings;
+    case RowIcon::Exit:
+      return exit;
+    case RowIcon::Shutdown:
+      return shutdown;
+    case RowIcon::Restart:
+      return restart;
+    case RowIcon::Suspend:
+      return suspend;
+    default:
+      return nullptr;
     }
   }
 };
@@ -64,6 +72,9 @@ struct ShellState {
   UiIcons ui_icons;
 
   void refresh(const Config &cfg, const BackendRegistry &backends);
+  void refreshAndFreeOldAssets(Renderer &renderer, const Config &cfg,
+                               const BackendRegistry &backends); // NUEVO
+
   void nav(int dy);
   void navMenu(int dy);
   void update(float dt, const Config &cfg);
@@ -73,6 +84,21 @@ struct ShellState {
   int controllers_focus = 0;
   int controller_pick_player = -1;
   int controller_pick_focus = 0;
+  // Drag/touch state for carousel
+  bool dragging = false;
+  float drag_start_pos = 0.0f;
+  float drag_start_offset = 0.0f;
+  float drag_last_pos = 0.0f;
+  Uint32 drag_last_time = 0;
+  float drag_velocity = 0.0f;
+  bool has_momentum = false;
+  void updateDrag(float dt);
+
+  bool tile_hovered = false;
+  int tile_hovered_id = -1;
+  bool tile_pressed = false;
+  int tile_pressed_id = -1;
+  void nextWallpaper();
 
 private:
   static constexpr float LERP_RATE = 10.0f;

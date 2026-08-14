@@ -1,3 +1,4 @@
+
 #include "ir_input.h"
 
 #ifdef HAVE_LIRC

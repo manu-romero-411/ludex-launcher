@@ -14,16 +14,19 @@ struct TileColor {
 
 struct App {
     std::string name;
-    std::string backend;                 // nombre del backend que la lanza
+    std::string backend;
     std::string run;
-    std::filesystem::path webapp_path;   // para %APP%
-
+    std::filesystem::path webapp_path;
+    
     std::filesystem::path icon_path;
     void* icon_texture = nullptr;
-
+    
     TileColor icon_tint{255, 255, 255};
     bool has_icon_tint = false;
-
+    
+    TileColor text_color{255, 255, 255};
+    bool has_text_color = false;
+    
     int tile_type = 0;
     TileColor color1;
     TileColor color2;
