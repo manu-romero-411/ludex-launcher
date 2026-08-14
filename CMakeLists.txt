@@ -63,7 +63,7 @@ add_executable(ludex-launcher
     src/ir_input.cpp
     src/shell_state.cpp
     src/shell_ui.cpp
-    src/renderer_vulkan.cpp
+    src/renderer_sdl.cpp
     src/assets.cpp
     src/ini.cpp
     src/backends.cpp

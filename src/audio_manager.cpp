@@ -140,6 +140,7 @@ void AudioManager::startMusic() {
 }
 
 void AudioManager::stopMusic() {
+    Mix_HookMusicFinished(nullptr); // evita reentrada durante el halt/free
     if (Mix_PlayingMusic()) {
         Mix_HaltMusic();
     }
