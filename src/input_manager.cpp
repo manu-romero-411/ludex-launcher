@@ -509,3 +509,4 @@ std::vector<InputManager::DeviceInfo> InputManager::devices() const {
   }
   return out;
 }
+

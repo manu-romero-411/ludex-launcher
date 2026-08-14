@@ -42,6 +42,7 @@ public:
 
     virtual void freeTexture(void* texture) = 0;
     virtual void getOutputSize(int* w, int* h) = 0;
+    virtual void presentBlackFrame() = 0;
 };
 
 std::unique_ptr<Renderer> createVulkanRenderer();

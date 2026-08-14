@@ -47,6 +47,18 @@ public:
 
   void applyAssignment(const std::vector<std::string> &guids);
   std::vector<DeviceInfo> devices() const;
+  void clearTransientState() {
+    while (!queue_.empty())
+      queue_.pop();
+
+    for (auto &slot : slots_) {
+      slot.hold_up = {};
+      slot.hold_down = {};
+      slot.hold_left = {};
+      slot.hold_right = {};
+      slot.last_activity_ms = 0;
+    }
+  }
 
 private:
   struct NavHold {

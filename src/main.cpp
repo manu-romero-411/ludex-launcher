@@ -136,6 +136,7 @@ int main(int argc, char **argv) {
   ir->init();
 
   ShellState shell;
+  DragState drag;
   shell.refresh(cfg, backends);
 
   std::unique_ptr<Renderer> renderer = createVulkanRenderer();
@@ -177,27 +178,13 @@ int main(int argc, char **argv) {
       audio.stopMusic();
       app_running = true;
       input.closeControllers();
-
-      // Renderizar un frame negro
-      renderer->beginFrame();
-      ImGui::NewFrame();
-      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-      ImGui::SetNextWindowPos(ImGui::GetMainViewport()->WorkPos);
-      ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
-      ImGui::Begin("##black", nullptr,
-                   ImGuiWindowFlags_NoDecoration |
-                       ImGuiWindowFlags_NoBackground);
-      ImDrawList *dl = ImGui::GetWindowDrawList();
-      dl->AddRectFilled(ImVec2(0, 0), ImGui::GetMainViewport()->WorkSize,
-                        IM_COL32(0, 0, 0, 255));
-      ImGui::End();
-      ImGui::PopStyleVar();
-      ImGui::Render();
-      renderer->endFrame();
-
+      renderer->presentBlackFrame();
       SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
     };
     hooks.after = [&] {
+      drag.reset();
+      input.clearTransientState();
+      renderer->getOutputSize(&sw, &sh);
       input.rescanControllers();
       app_running = false;
       SDL_RaiseWindow(window);
@@ -292,8 +279,8 @@ int main(int argc, char **argv) {
           shell.power_focus = 0;
           break;
         }
-      } else if (const App *ap = shell.selectedApp()) {
-        actions.launch(*ap);
+      } else if (shell.selectedApp()) {
+        shell.pending_launch = shell.selected;
       }
       break;
     case UiAction::Back:

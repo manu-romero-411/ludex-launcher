@@ -307,6 +307,14 @@ public:
   void getOutputSize(int *w, int *h) override {
     SDL_GetRendererOutputSize(renderer_, w, h);
   }
+  void presentBlackFrame() override {
+    if (!ready_)
+      return;
+
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_RenderClear(renderer_);
+    SDL_RenderPresent(renderer_);
+  }
 
 private:
   SDL_Window *window_ = nullptr;

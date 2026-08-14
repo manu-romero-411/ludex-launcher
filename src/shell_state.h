@@ -48,6 +48,22 @@ struct UiIcons {
   }
 };
 
+struct DragState {
+    bool mouse_down = false;
+    bool drag_active = false;
+    float mouse_down_x = 0.0f;
+    float mouse_down_y = 0.0f;
+
+    bool finger_down = false;
+    bool touch_drag_active = false;
+    float finger_down_x = 0.0f;
+    float finger_down_y = 0.0f;
+
+    void reset() {
+        *this = DragState{};
+    }
+};
+
 struct ShellState {
   std::vector<App> apps;
 
@@ -99,6 +115,7 @@ struct ShellState {
   bool tile_pressed = false;
   int tile_pressed_id = -1;
   void nextWallpaper();
+    int pending_launch = -1;
 
 private:
   static constexpr float LERP_RATE = 10.0f;
