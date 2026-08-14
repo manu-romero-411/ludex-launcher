@@ -27,10 +27,8 @@ public:
 
   bool poll(UiInput &out);
 
-  void movePlayer(int from, int to);
   void update(); // llamar 1 vez por frame: repeticiones continuas
 
-  std::vector<std::string> describePlayers() const;
   struct PlayerStatus {
     int player;
     std::string name;
@@ -76,10 +74,6 @@ private:
   Slot *slotByPlayer(int p);
   const Slot *slotByPlayer(int p) const;
   std::vector<std::string> assign_guids_;
-  struct AxisState {
-    int dir_x = 0, dir_y = 0;
-    Uint32 ms_x = 0, ms_y = 0;
-  };
 
   int createOrFindSlotForGuid(const std::string &guid);
   int findOrderIndexBySlotId(int slot_id) const;
@@ -97,14 +91,12 @@ private:
   std::vector<int> order_;
 
   std::unordered_map<SDL_JoystickID, int> instance_to_slot_;
-  std::unordered_map<int, AxisState> axis_by_slot_;
 
   std::queue<UiInput> queue_;
 
   int next_slot_id_ = 0;
 
   static constexpr Sint16 DEADZONE = 16000;
-  static constexpr Uint32 NAV_COOLDOWN_MS = 200;
 
   void stepHold(NavHold &h, bool held, Uint32 now, int player, UiAction a);
 

@@ -136,7 +136,6 @@ void loadUiIcons(Renderer &renderer, ShellState &state, const Config &cfg,
   if (cfg.icons_dir.empty())
     return;
 
-  TileColor white{255, 255, 255}; // se tintan al dibujar según tema
   int menu_sz = (int)(screen_h * cfg.menu_h_pct * 0.6f);
   int help_sz = (int)(screen_h * 0.030f);
 

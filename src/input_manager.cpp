@@ -28,7 +28,6 @@ void InputManager::shutdown() {
   slots_.clear();
   order_.clear();
   instance_to_slot_.clear();
-  axis_by_slot_.clear();
 
   while (!queue_.empty()) {
     queue_.pop();
@@ -57,7 +56,6 @@ void InputManager::closeControllers() {
   }
 
   instance_to_slot_.clear();
-  axis_by_slot_.clear();
 }
 
 void InputManager::rescanControllers() {
@@ -163,7 +161,6 @@ void InputManager::removeDevice(SDL_JoystickID instance) {
   }
 
   instance_to_slot_.erase(it);
-  axis_by_slot_.erase(slot_id);
 }
 
 void InputManager::handleEvent(const SDL_Event &event) {
@@ -229,51 +226,6 @@ bool InputManager::poll(UiInput &out) {
   return true;
 }
 
-void InputManager::movePlayer(int from, int to) {
-  if (from < 0 || from >= static_cast<int>(order_.size())) {
-    return;
-  }
-
-  if (to < 0 || to >= static_cast<int>(order_.size())) {
-    return;
-  }
-
-  if (from == to) {
-    return;
-  }
-
-  int slot_id = order_[from];
-
-  order_.erase(order_.begin() + from);
-  order_.insert(order_.begin() + to, slot_id);
-
-  SDL_Log("Reordenación de mandos: %d -> %d", from, to);
-}
-
-std::vector<std::string> InputManager::describePlayers() const {
-  std::vector<std::string> result;
-
-  for (int player = 0; player < static_cast<int>(order_.size()); ++player) {
-    int slot_id = order_[player];
-    const Slot *slot = slotById(slot_id);
-
-    std::ostringstream oss;
-
-    oss << "J" << (player + 1) << ": ";
-
-    if (!slot) {
-      oss << "slot inválido";
-    } else {
-      oss << slot->name;
-      oss << " guid=" << slot->guid;
-      oss << (slot->attached ? " attached" : " detached");
-    }
-
-    result.push_back(oss.str());
-  }
-
-  return result;
-}
 
 int InputManager::createOrFindSlotForGuid(const std::string &guid) {
   for (const auto &slot : slots_) {
@@ -368,7 +320,7 @@ void InputManager::update() {
     if (!slot.attached || !slot.game_controller)
       continue;
 
-    int player = findOrderIndexBySlotId(slot.id);
+    int player = slot.assigned_player;
     if (player < 0)
       continue;
 

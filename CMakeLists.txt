@@ -12,6 +12,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
 pkg_check_modules(RSVG IMPORTED_TARGET librsvg-2.0)
+pkg_check_modules(SDL2_MIXER REQUIRED SDL2_mixer)
 
 find_package(Vulkan REQUIRED)
 
@@ -66,6 +67,7 @@ add_executable(ludex-launcher
     src/assets.cpp
     src/ini.cpp
     src/backends.cpp
+    src/util.cpp
 )
 
 target_include_directories(ludex-launcher PRIVATE
@@ -78,6 +80,7 @@ target_link_libraries(ludex-launcher PRIVATE
     PkgConfig::SDL2
     PkgConfig::SDL2_IMAGE
     Vulkan::Vulkan
+    ${SDL2_MIXER_LIBRARIES}
 )
 
 # ---------------------------------------------------------------------------

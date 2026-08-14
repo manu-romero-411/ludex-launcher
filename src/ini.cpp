@@ -1,37 +1,29 @@
 #include "ini.h"
+#include "util.h"
 
-#include <cctype>
 #include <fstream>
 
-static std::string trim(const std::string& s) {
-    size_t a = s.find_first_not_of(" \t\r\n");
-    if (a == std::string::npos) return "";
-    size_t b = s.find_last_not_of(" \t\r\n");
-    return s.substr(a, b - a + 1);
-}
-
-bool Ini::load(const std::filesystem::path& path) {
-    std::ifstream f(path);
+bool Ini::load(const std::filesystem::path& path) {    std::ifstream f(path);
     if (!f) return false;
 
     std::string line;
     std::string section;
 
     while (std::getline(f, line)) {
-        std::string t = trim(line);
+        std::string t = util::trim(line);
 
         if (t.empty() || t[0] == ';' || t[0] == '#') continue;
 
         if (t.front() == '[' && t.back() == ']') {
-            section = trim(t.substr(1, t.size() - 2));
+            section = util::trim(t.substr(1, t.size() - 2));
             continue;
         }
 
         size_t eq = t.find('=');
         if (eq == std::string::npos) continue;
 
-        std::string key = trim(t.substr(0, eq));
-        std::string val = trim(t.substr(eq + 1));
+        std::string key = util::trim(t.substr(0, eq));
+        std::string val = util::trim(t.substr(eq + 1));
 
         data_[section][key] = val;
     }
@@ -71,13 +63,13 @@ std::string Ini::get(const std::string& s, const std::string& k,
 int Ini::getInt(const std::string& s, const std::string& k, int def) const {
     std::string v = get(s, k);
     if (v.empty()) return def;
-    return std::atoi(v.c_str());
+    try { return std::stoi(v); } catch (...) { return def; }
 }
 
 float Ini::getFloat(const std::string& s, const std::string& k, float def) const {
     std::string v = get(s, k);
     if (v.empty()) return def;
-    return std::atof(v.c_str());
+    try { return std::stof(v); } catch (...) { return def; }
 }
 
 void Ini::set(const std::string& s, const std::string& k, const std::string& v) {

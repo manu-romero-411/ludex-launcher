@@ -13,7 +13,13 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
+namespace Ids {
+constexpr int SYSTEM_MENU_BASE = 500;
+constexpr int PANEL_ROW_BASE = 9000;
+constexpr int PANEL_FOOTER_BASE = 9100;
+constexpr int CONTROLLER_ROW_BASE = 9300;
+constexpr int CONTROLLER_BACK = 9400;
+} // namespace Ids
 /* ================================================================
  * Fuentes y utilidades
  * ================================================================ */
@@ -92,10 +98,6 @@ static std::string upper(std::string s) {
   return s;
 }
 
-static ImU32 colRGBA(int r, int g, int b, int a = 255) {
-  return IM_COL32(r, g, b, a);
-}
-
 static ImU32 colScaled(const TileColor &c, float f, int a = 255) {
   return IM_COL32((int)std::clamp(c.r * f, 0.0f, 255.0f),
                   (int)std::clamp(c.g * f, 0.0f, 255.0f),
@@ -109,23 +111,6 @@ static std::string fmt3(float v) {
   char b[32];
   std::snprintf(b, sizeof(b), "%.3f", v);
   return b;
-}
-
-static void *uiIcon(const UiIcons &ic, int idx) {
-  switch (idx) {
-  case 1:
-    return ic.settings;
-  case 2:
-    return ic.exit;
-  case 3:
-    return ic.shutdown;
-  case 4:
-    return ic.restart;
-  case 5:
-    return ic.suspend;
-  default:
-    return nullptr;
-  }
 }
 
 static std::string
@@ -305,7 +290,7 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
     dl->AddRectFilled(min, max, col);
 
     if (state.menu_open) {
-      ImGui::PushID(500 + m);
+      ImGui::PushID(Ids::SYSTEM_MENU_BASE + m);
       ImGui::SetCursorScreenPos(min);
       ImGui::InvisibleButton("##sys", ImVec2(menu_w, menu_h));
       if (ImGui::IsItemClicked()) {
@@ -362,7 +347,7 @@ static void drawHints(const ShellState &state, const Config &cfg,
             {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
             {ic.accept, "A", "OK"},
             {ic.back, "B", "BACK"}};
-  } else if (state.show_settings || state.show_controllers) {
+  } else if (state.show_controllers) {
     segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
             {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
             {ic.accept, "A", "OK"},
@@ -443,48 +428,64 @@ struct SRow {
   const char *label;
   bool adjustable;
   std::string (*get)(const Config &);
-  void (*adjust)(Config &, int dir);
+  void (*adjust)(Config &, int);
   void (*activate)(ShellState &, Config &, const ShellActions &);
-  int icon; // 0=ninguno 1=settings 2=exit 3=shutdown 4=restart 5=suspend
+  RowIcon icon;
 };
 
 const SRow kSettingsRows[] = {
     {"APP DRAWER MODE", true, [](const Config &c) { return c.side; },
      [](Config &c, int) {
-       if (c.side == "left") c.side = "right";
-       else if (c.side == "right") c.side = "top";
-       else if (c.side == "top") c.side = "bottom";
-       else c.side = "left";
-     }, nullptr, 0},
+       if (c.side == "left")
+         c.side = "right";
+       else if (c.side == "right")
+         c.side = "top";
+       else if (c.side == "top")
+         c.side = "bottom";
+       else
+         c.side = "left";
+     },
+     nullptr, RowIcon::None},
     {"# VISIBLE ELEMENTS", true,
      [](const Config &c) { return std::to_string(c.visible_items); },
      [](Config &c, int d) {
        c.visible_items = std::clamp(c.visible_items + 2 * d, 5, 11);
-       if (c.visible_items % 2 == 0) c.visible_items--;
-     }, nullptr, 0},
+       if (c.visible_items % 2 == 0)
+         c.visible_items--;
+     },
+     nullptr, RowIcon::None},
     {"SHOW GAMEPAD INDICATORS", true,
      [](const Config &c) -> std::string {
        return c.show_player_indicators ? "YES" : "NO";
      },
-     [](Config &c, int) { c.show_player_indicators = !c.show_player_indicators; },
-     nullptr, 0},
+     [](Config &c, int) {
+       c.show_player_indicators = !c.show_player_indicators;
+     },
+     nullptr, RowIcon::None},
     {"COLOUR SCHEME", true, [](const Config &c) { return c.theme; },
      [](Config &c, int) { c.theme = (c.theme == "dark") ? "light" : "dark"; },
-     nullptr, 0},
+     nullptr, RowIcon::None},
     {"HELP ICONS", false, [](const Config &c) { return c.help_icons; }, nullptr,
      [](ShellState &, Config &c, const ShellActions &a) {
-       c.help_icons = (c.help_icons == "xbox") ? "playstation"
-                      : (c.help_icons == "playstation") ? "none" : "xbox";
-       if (a.reload_ui_icons) a.reload_ui_icons();
-     }, 0},
+       c.help_icons = (c.help_icons == "xbox")          ? "playstation"
+                      : (c.help_icons == "playstation") ? "none"
+                                                        : "xbox";
+       if (a.reload_ui_icons)
+         a.reload_ui_icons();
+     },
+     RowIcon::None},
     {"ALL PLAYERS CONTROL UI", true,
-     [](const Config &c) -> std::string { return c.all_players_ui ? "YES" : "NO"; },
-     [](Config &c, int) { c.all_players_ui = !c.all_players_ui; }, nullptr, 0},
+     [](const Config &c) -> std::string {
+       return c.all_players_ui ? "YES" : "NO";
+     },
+     [](Config &c, int) { c.all_players_ui = !c.all_players_ui; }, nullptr,
+     RowIcon::None},
     {"GO BACK", false, nullptr, nullptr,
      [](ShellState &s, Config &c, const ShellActions &) {
        c.save(c.ini_path);
        s.show_settings = false;
-     }, 0},
+     },
+     RowIcon::None},
 };
 
 const SRow kPowerRows[] = {
@@ -494,26 +495,27 @@ const SRow kPowerRows[] = {
          a.suspend();
        s.show_power = false;
      },
-     5},
+     RowIcon::Suspend},
     {"REBOOT", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &a) {
        if (a.reboot)
          a.reboot();
        s.show_power = false;
      },
-     4},
+     RowIcon::Restart},
     {"POWER OFF", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &a) {
        if (a.poweroff)
          a.poweroff();
        s.show_power = false;
      },
-     3},
+     RowIcon::Shutdown},
     {"VOLVER", false, nullptr, nullptr,
      [](ShellState &s, Config &, const ShellActions &) {
        s.show_power = false;
      },
-     2},
+     RowIcon::Exit},
+
 };
 
 constexpr int kSettingsCount =
@@ -630,7 +632,7 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
     if (i == focus)
       dl->AddRectFilled(rmin, rmax, row_focus);
 
-    ImGui::PushID(9000 + i);
+    ImGui::PushID(Ids::PANEL_ROW_BASE + i);
     ImGui::SetCursorScreenPos(rmin);
     ImGui::InvisibleButton("##row", ImVec2(pw, row_h));
     if (ImGui::IsItemClicked()) {
@@ -642,7 +644,7 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
     }
     ImGui::PopID();
 
-    void *ricon = uiIcon(st.ui_icons, rows[i].icon);
+    void *ricon = st.ui_icons.byIndex(rows[i].icon);
     float isz = row_h * 0.6f;
     float lx = px + pad;
     if (ricon) {
@@ -687,7 +689,7 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
         ImVec2(bmin.x + (bw - bs.x) * 0.5f, bmin.y + (bh - bs.y) * 0.5f),
         text_main, blabel);
 
-    ImGui::PushID(9100 + i);
+    ImGui::PushID(Ids::PANEL_FOOTER_BASE + i);
     ImGui::SetCursorScreenPos(bmin);
     ImGui::InvisibleButton("##fbtn", ImVec2(bw, bh));
     if (ImGui::IsItemClicked()) {
@@ -770,7 +772,7 @@ static void drawControllersPanel(ShellState &st, Config &cfg,
     if (i == focus)
       dl->AddRectFilled(ImVec2(px, y0), ImVec2(px + pw, y0 + row_h), row_focus);
 
-    ImGui::PushID(9300 + i);
+    ImGui::PushID(Ids::CONTROLLER_ROW_BASE + i);
     ImGui::SetCursorScreenPos(ImVec2(px, y0));
     ImGui::InvisibleButton("##crow", ImVec2(pw, row_h));
     if (ImGui::IsItemClicked()) {
@@ -802,7 +804,7 @@ static void drawControllersPanel(ShellState &st, Config &cfg,
   ImVec2 bs = ImGui::CalcTextSize("BACK");
   dl->AddText(ImVec2(bmin.x + (bw - bs.x) * 0.5f, bmin.y + (bh - bs.y) * 0.5f),
               text_main, "BACK");
-  ImGui::PushID(9400);
+ ImGui::PushID(Ids::CONTROLLER_BACK);
   ImGui::SetCursorScreenPos(bmin);
   ImGui::InvisibleButton("##cback", ImVec2(bw, bh));
   if (ImGui::IsItemClicked()) {

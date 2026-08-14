@@ -8,11 +8,8 @@
 #include <unistd.h>
 
 #include "ini.h"
+#include "util.h"
 
-static std::string quoteIfNeeded(const std::string& s) {
-    if (s.find_first_of(" \t") == std::string::npos) return s;
-    return "\"" + s + "\"";
-}
 
 static std::string replaceAll(std::string s,
                               const std::string& from, const std::string& to) {
@@ -46,14 +43,6 @@ static std::vector<std::string> tokenize(const std::string& s) {
     return out;
 }
 
-static std::filesystem::path exeDir() {
-    char buf[4096];
-    ssize_t n = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-    if (n <= 0) return {};
-    buf[n] = '\0';
-    return std::filesystem::path(buf).parent_path();
-}
-
 void BackendRegistry::loadAll() {
     backends_.clear();
 
@@ -68,7 +57,7 @@ void BackendRegistry::loadAll() {
         dirs.push_back(std::filesystem::path(home) / ".config" / "ludex" / "backends");
     }
 
-    std::filesystem::path ed = exeDir();
+    std::filesystem::path ed = util::exeDir();
     if (!ed.empty()) dirs.push_back(ed / "backends");
     dirs.push_back(std::filesystem::current_path() / "backends");
 
@@ -122,11 +111,11 @@ std::vector<std::string> buildBackendCommand(
 
     cmd = replaceAll(cmd, "%URL%", run);
     cmd = replaceAll(cmd, "%RUN%", run);
-    cmd = replaceAll(cmd, "%APP%", quoteIfNeeded(webapp_path.string()));
+    cmd = replaceAll(cmd, "%APP%", util::quoteIfNeeded(webapp_path.string()));
     cmd = replaceAll(cmd, "%CONTROLLERSCONFIG%", controllers_config);
     cmd = replaceAll(cmd, "%CONTROLLERSFILE%",
                      controllers_file.empty()
-                         ? "" : quoteIfNeeded(controllers_file.string()));
+                         ? "" : util::quoteIfNeeded(controllers_file.string()));
 
     return tokenize(cmd);
 }

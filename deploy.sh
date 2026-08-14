@@ -8,7 +8,7 @@ strip build-release/ludex-launcher
 
 install -d "$PREFIX/resources" "$PREFIX/backends" "$HOME/.local/bin"
 install -m 755 build-release/ludex-launcher "$PREFIX/"
-cp -r resources/apps  "$PREFIX/resources/"
+cp -r apps  "$PREFIX/apps"
 cp -r resources/icons "$PREFIX/resources/"
 cp -r backends/*.backend "$PREFIX/backends/"
 

@@ -8,13 +8,9 @@
 #include "backends.h"
 
 #include "ini.h"
+#include "util.h"
 
-static std::string trim(const std::string& s) {
-    size_t a = s.find_first_not_of(" \t\r\n");
-    if (a == std::string::npos) return "";
-    size_t b = s.find_last_not_of(" \t\r\n");
-    return s.substr(a, b - a + 1);
-}
+
 
 static std::filesystem::path resolveIcon(
     const Config& cfg,
@@ -62,7 +58,7 @@ static std::string displayNameFromStem(std::string stem) {
 }
 
 static bool parseHexColor(const std::string& s, TileColor& out) {
-    std::string t = trim(s);
+    std::string t = util::trim(s);
     if (!t.empty() && t[0] == '#') t = t.substr(1);
     if (t.size() != 6) return false;
 
@@ -75,15 +71,6 @@ static bool parseHexColor(const std::string& s, TileColor& out) {
     out.b = (unsigned char)hex2(t, 4);
     return true;
 }
-
-static std::vector<std::string> splitArgs(const std::string& s) {
-    std::vector<std::string> out;
-    std::istringstream iss(s);
-    std::string cur;
-    while (iss >> cur) out.push_back(cur);
-    return out;
-}
-
 
 static App parseWebapp(const std::filesystem::path& path, const Config& cfg,
                        const BackendRegistry& backends, bool& ok)
@@ -127,7 +114,7 @@ static App parseWebapp(const std::filesystem::path& path, const Config& cfg,
     } else {
         // Formato antiguo: solo una URL -> backend "webapp"
         app.backend = "webapp";
-        app.run = trim(content);
+        app.run = util::trim(content);
         app.icon_path = resolveIcon(cfg, "", path.stem().string());
     }
 

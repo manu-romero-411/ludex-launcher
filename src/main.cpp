@@ -77,6 +77,11 @@ int main(int argc, char **argv) {
       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
       SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
           SDL_WINDOW_ALLOW_HIGHDPI);
+  if (!window) {
+    std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
+    SDL_Quit();
+    return 1;
+  }
 
   Config cfg = loadConfig();
 
@@ -86,11 +91,6 @@ int main(int argc, char **argv) {
     SDL_FreeSurface(icon);
   }
 
-  if (!window) {
-    std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
-    SDL_Quit();
-    return 1;
-  }
 
   BackendRegistry backends;
   backends.loadAll();
@@ -328,7 +328,7 @@ int main(int argc, char **argv) {
     }
 
     // ---- MANDO (UiInput desde InputManager) ----
-    input.update(); // <-- AÑADIR: genera eventos de hold/repetición
+    input.update();
     UiInput ui;
     while (input.poll(ui)) {
       if (!cfg.all_players_ui && ui.player != cfg.active_player)
@@ -342,12 +342,6 @@ int main(int argc, char **argv) {
 
     if (want_quit)
       running = false;
-
-    // Solo animamos el carrusel si no hay diálogo abierto
-    // (ImGui ya gestiona su propia navegación por mando/teclado).
-    if (!shell.show_settings) {
-      shell.update(dt, cfg);
-    }
 
     renderer->beginFrame();
     renderer->drawShell(shell, cfg, actions);

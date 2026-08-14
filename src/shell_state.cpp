@@ -33,20 +33,6 @@ void ShellState::navMenu(int dy) {
   menu_selected = std::clamp(menu_selected + dy, 0, 3);
 }
 
-void ShellState::pickNextWallpaperTarget(WallpaperLayer &layer,
-                                         float zoom_max) {
-  // escala entre 1.0 y zoom_max
-  layer.kb_scale = 1.0f;
-  // pan objetivo: offset entre -0.10 y +0.10 de la dimensión
-  // (para que no se salga del marco visible)
-  auto rand11 = []() -> float {
-    return ((float)(std::rand() % 2000) / 1000.0f) - 1.0f;
-  };
-  layer.kb_pan_x = rand11() * 0.10f;
-  layer.kb_pan_y = rand11() * 0.10f;
-  (void)zoom_max; // se usa en update() para el target
-}
-
 void ShellState::update(float dt, const Config &cfg) {
   int n = (int)apps.size();
   if (n > 0) {

@@ -1,65 +1,10 @@
 #include "config.h"
 
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-
 #include "ini.h"
-
-static std::vector<std::string> splitArgs(const std::string &s) {
-  std::vector<std::string> out;
-  std::istringstream iss(s);
-  std::string cur;
-  while (iss >> cur)
-    out.push_back(cur);
-  return out;
-}
-
-static std::vector<std::string> splitCsv(const std::string &s) {
-  std::vector<std::string> out;
-  std::istringstream iss(s);
-  std::string cur;
-  while (std::getline(iss, cur, ',')) {
-    while (!cur.empty() && std::isspace((unsigned char)cur.front()))
-      cur.erase(cur.begin());
-    while (!cur.empty() && std::isspace((unsigned char)cur.back()))
-      cur.pop_back();
-    if (!cur.empty())
-      out.push_back(cur);
-  }
-  return out;
-}
-
-static std::string joinCsv(const std::vector<std::string> &v) {
-  std::string out;
-  for (size_t i = 0; i < v.size(); ++i) {
-    if (i)
-      out += ",";
-    out += v[i];
-  }
-  return out;
-}
-
-static std::string joinArgs(const std::vector<std::string> &v) {
-  std::string out;
-  for (const auto &a : v) {
-    if (!out.empty())
-      out += " ";
-    out += a;
-  }
-  return out;
-}
-
-static std::filesystem::path exeDir() { // <-- mover aquí, antes de defaults
-  char buf[4096];
-  ssize_t n = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-  if (n <= 0)
-    return {};
-  buf[n] = '\0';
-  return std::filesystem::path(buf).parent_path();
-}
+#include "util.h"
+#include <cstdlib>
+#include <iostream>
+#include <unistd.h>
 
 /* ------------------------------------------------------------------
  * Valores por defecto. Se aplican SOLO cuando el INI no existe o le
@@ -72,7 +17,7 @@ namespace defaults {
 static std::filesystem::path appsDir() {
   if (const char *e = std::getenv("LUDEX_APPS_DIR"))
     return e;
-  std::filesystem::path ed = exeDir();
+  std::filesystem::path ed = util::exeDir();
   if (!ed.empty()) {
     std::filesystem::path p = ed / "apps";
     std::error_code ec;
@@ -127,11 +72,10 @@ bool Config::load(const std::filesystem::path &path) {
       ini.get(S, "wallpaper_dir", defaults::wallpaperDir().string());
 
   std::string we = ini.get(S, "wallpaper_exts");
-  wallpaper_exts = we.empty() ? defaults::wallpaperExts() : splitCsv(we);
+  wallpaper_exts = we.empty() ? defaults::wallpaperExts() : util::splitCsv(we);
 
   std::string ie = ini.get(S, "icon_exts");
-  icon_exts = ie.empty() ? defaults::iconExts() : splitCsv(ie);
-
+  icon_exts = ie.empty() ? defaults::iconExts() : util::splitCsv(ie);
   // Fuentes
   font_regular = ini.get(S, "font_regular", defaults::fontRegular());
   font_bold = ini.get(S, "font_bold", defaults::fontBold());
@@ -187,7 +131,7 @@ bool Config::load(const std::filesystem::path &path) {
       tries.push_back(icons_dir);
     tries.push_back(std::filesystem::current_path() / "resources" / "icons");
 
-    std::filesystem::path ed = exeDir();
+    std::filesystem::path ed = util::exeDir();
     if (!ed.empty()) {
       tries.push_back(ed / "resources" / "icons");        // install layout
       tries.push_back(ed / ".." / "resources" / "icons"); // dev layout (build/)
@@ -237,8 +181,8 @@ bool Config::save(const std::filesystem::path &path) const {
 
   ini.set(S, "apps_dir", apps_dir.string());
   ini.set(S, "wallpaper_dir", wallpaper_dir.string());
-  ini.set(S, "wallpaper_exts", joinCsv(wallpaper_exts));
-  ini.set(S, "icon_exts", joinCsv(icon_exts));
+  ini.set(S, "wallpaper_exts", util::joinCsv(wallpaper_exts));
+  ini.set(S, "icon_exts", util::joinCsv(icon_exts));
 
   ini.set(S, "font_regular", font_regular);
   ini.set(S, "font_bold", font_bold);
@@ -270,7 +214,7 @@ bool Config::save(const std::filesystem::path &path) const {
     ini.set("controllers", k + "_guid", controller_guid[i]);
     ini.set("controllers", k + "_name", controller_name[i]);
   }
-    ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "1" : "0");
+  ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "1" : "0");
   return ini.save(path);
 }
 
