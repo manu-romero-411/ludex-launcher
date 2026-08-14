@@ -69,6 +69,7 @@ add_executable(ludex-launcher
     src/backends.cpp
     src/util.cpp
     src/audio_manager.cpp
+    src/application.cpp
 )
 
 target_include_directories(ludex-launcher PRIVATE

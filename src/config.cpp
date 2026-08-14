@@ -153,8 +153,6 @@ bool Config::load(const std::filesystem::path &path) {
     visible_items = 3;
   if (visible_items % 2 == 0)
     visible_items++;
-  if (side != "left" && side != "right")
-    side = "left";
 
   // Input
   active_player = ini.getInt(S, "active_player", 0);
