@@ -1,0 +1,4 @@
+[backend]
+name=es_de
+exec_start=esde %URL%
+exec_end=

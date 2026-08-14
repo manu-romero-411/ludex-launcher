@@ -1,0 +1,4 @@
+[backend]
+name=steam
+exec_start=steam %URL%
+exec_end=

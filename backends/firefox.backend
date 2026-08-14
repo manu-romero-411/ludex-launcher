@@ -1,0 +1,4 @@
+[backend]
+name=firefox
+exec_start=/usr/bin/firefox %URL%
+exec_end=

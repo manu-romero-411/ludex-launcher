@@ -1,0 +1,4 @@
+[backend]
+name=brave
+exec_start=/usr/bin/brave-browser %URL%
+exec_end=

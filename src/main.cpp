@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <SDL_image.h>
 #include <imgui_impl_sdl2.h> // <-- IMPORTANTE: para alimentar a ImGui
 
 #include <clocale>
@@ -22,27 +23,68 @@ static std::filesystem::path runtimeDir() {
   return std::filesystem::path("/tmp") / "ludex";
 }
 
+static SDL_Surface *loadWindowIcon(const std::filesystem::path &icons_dir) {
+  const char *names[] = {"ludex.svg", "ludex.png", "app.svg", "app.png"};
+  for (const char *n : names) {
+    std::filesystem::path p = icons_dir / n;
+    std::error_code ec;
+    if (!std::filesystem::exists(p, ec))
+      continue;
+    SDL_Surface *s = nullptr;
+    if (p.extension() == ".svg") {
+      SDL_RWops *rw = SDL_RWFromFile(p.c_str(), "rb");
+      if (rw) {
+        s = IMG_LoadSizedSVG_RW(rw, 256, 256);
+        SDL_RWclose(rw);
+      }
+    } else {
+      s = IMG_Load(p.c_str());
+    }
+    if (s)
+      return s;
+  }
+  return nullptr;
+}
+
 int main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
+  (void)argc; (void)argv;
 
   std::setlocale(LC_ALL, "");
 
-  // Hints DEBEN estar antes de SDL_Init
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
   SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
+  SDL_SetHint(SDL_HINT_APP_NAME, "ludex");   // app_id de Wayland -> ludex.desktop
 
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) !=
-      0) {
-    std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
-    return 1;
+  // Wayland por defecto; el env del usuario manda; fallback X11
+  const Uint32 sdl_flags =
+      SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER;
+  if (!std::getenv("SDL_VIDEODRIVER"))
+    setenv("SDL_VIDEODRIVER", "wayland", 0);
+
+  if (SDL_Init(sdl_flags) != 0) {
+    SDL_Log("[ludex] '%s' falló (%s); reintentando con x11",
+            std::getenv("SDL_VIDEODRIVER"), SDL_GetError());
+    setenv("SDL_VIDEODRIVER", "x11", 1);
+    if (SDL_Init(sdl_flags) != 0) {
+      std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
+      return 1;
+    }
   }
+  SDL_Log("[ludex] video driver: %s", SDL_GetCurrentVideoDriver());
 
-  SDL_Window *window =
-      SDL_CreateWindow("ludex-launcher", SDL_WINDOWPOS_UNDEFINED,
-                       SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
-                       SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
-                           SDL_WINDOW_ALLOW_HIGHDPI);
+  SDL_Window *window = SDL_CreateWindow(
+      "ludex-launcher",
+      SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
+      SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
+          SDL_WINDOW_ALLOW_HIGHDPI);
+
+  Config cfg = loadConfig();
+
+  IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_WEBP);
+  if (SDL_Surface *icon = loadWindowIcon(cfg.icons_dir)) {
+    SDL_SetWindowIcon(window, icon);
+    SDL_FreeSurface(icon);
+  }
 
   if (!window) {
     std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
@@ -50,7 +92,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  Config cfg = loadConfig();
   BackendRegistry backends;
   backends.loadAll();
   InputManager input;
@@ -126,14 +167,10 @@ int main(int argc, char **argv) {
   };
   actions.quit = [&] { want_quit = true; };
   actions.poweroff = [&] {
-    launchApp({"echo", "systemctl", "poweroff"}, LaunchHooks{});
+    launchApp({"systemctl", "poweroff"}, LaunchHooks{});
   };
-  actions.reboot = [&] {
-    launchApp({"echo", "systemctl", "reboot"}, LaunchHooks{});
-  };
-  actions.suspend = [&] {
-    launchApp({"echo", "systemctl", "suspend"}, LaunchHooks{});
-  };
+  actions.reboot = [&] { launchApp({"systemctl", "reboot"}, LaunchHooks{}); };
+  actions.suspend = [&] { launchApp({"systemctl", "suspend"}, LaunchHooks{}); };
   actions.player_status = [&] { return input.playerStatus(); };
   actions.reload_ui_icons = [&] { loadUiIcons(*renderer, shell, cfg, sh); };
   auto handleAction = [&](UiAction a) {

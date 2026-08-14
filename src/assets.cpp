@@ -65,7 +65,8 @@ void loadAllWallpapers(Renderer &renderer, ShellState &state, const Config &cfg,
   }
 
   if (!state.wallpapers.empty()) {
-    state.wp_current = 0;
+    state.wp_current = std::rand() % (int)state.wallpapers.size();
+    state.wp_timer = 0.0f;
   }
   SDL_Log("[ludex] %d wallpapers cargados (pantalla %dx%d)",
           (int)state.wallpapers.size(), screen_w, screen_h);
@@ -103,7 +104,7 @@ void freeShellAssets(Renderer &renderer, ShellState &state) {
     if (L.texture)
       renderer.freeTexture(L.texture);
   }
-  
+
   state.wallpapers.clear();
   state.wp_current = -1;
   state.wp_next = -1;
@@ -155,7 +156,8 @@ void loadUiIcons(Renderer &renderer, ShellState &state, const Config &cfg,
   ic.shutdown = load(cfg.icons_dir / "shutdown.svg", menu_sz, true);
   ic.restart = load(cfg.icons_dir / "restart.svg", menu_sz, true);
   ic.suspend = load(cfg.icons_dir / "suspend.svg", menu_sz, true);
-  ic.gamepad = load(cfg.icons_dir / "gamepad.svg", (int)(screen_h * 0.030f), true);
+  ic.gamepad =
+      load(cfg.icons_dir / "gamepad.svg", (int)(screen_h * 0.030f), true);
   // Ayuda: glyphs de DOS colores -> colores originales, sin tinte
   if (cfg.help_icons != "none") {
     std::filesystem::path help = cfg.icons_dir / "help" / cfg.help_icons;

@@ -1,0 +1,4 @@
+[backend]
+name=kodi
+exec_start=kodi %URL%
+exec_end=

@@ -291,8 +291,8 @@ static void drawSystemMenu(const ShellState &state, const Config &cfg,
   float total = menu_h * 4.0f;
   float y_base = H - total * state.menu_anim;
 
-  static const char *labels[4] = {"CONFIGURACI\xC3\x93N", "CONTROLLERS",
-                                  "SALIR", "SHUTDOWN..."};
+  static const char *labels[4] = {"SETTINGS", "CONTROLLERS", "QUIT TO DESKTOP",
+                                  "SHUTDOWN..."};
   void *icons[4] = {state.ui_icons.settings, state.ui_icons.gamepad,
                     state.ui_icons.exit, state.ui_icons.shutdown};
 
@@ -451,113 +451,40 @@ struct SRow {
 const SRow kSettingsRows[] = {
     {"APP DRAWER MODE", true, [](const Config &c) { return c.side; },
      [](Config &c, int) {
-       if (c.side == "left")
-         c.side = "right";
-       else if (c.side == "right")
-         c.side = "top";
-       else if (c.side == "top")
-         c.side = "bottom";
-       else
-         c.side = "left";
-     },
-     nullptr, 0},
+       if (c.side == "left") c.side = "right";
+       else if (c.side == "right") c.side = "top";
+       else if (c.side == "top") c.side = "bottom";
+       else c.side = "left";
+     }, nullptr, 0},
     {"# VISIBLE ELEMENTS", true,
      [](const Config &c) { return std::to_string(c.visible_items); },
      [](Config &c, int d) {
        c.visible_items = std::clamp(c.visible_items + 2 * d, 5, 11);
-       if (c.visible_items % 2 == 0)
-         c.visible_items--;
-     },
-     nullptr, 0},
-    {"TILE WIDTH", true, [](const Config &c) { return fmt3(c.tile_w_pct); },
-     [](Config &c, int d) {
-       c.tile_w_pct = std::clamp(c.tile_w_pct + 0.005f * d, 0.10f, 0.40f);
-     },
-     nullptr, 0},
-    {"TILE WIDTH (SELECTED)", true,
-     [](const Config &c) { return fmt3(c.tile_sel_w_pct); },
-     [](Config &c, int d) {
-       c.tile_sel_w_pct =
-           std::clamp(c.tile_sel_w_pct + 0.005f * d, 0.10f, 0.45f);
-     },
-     nullptr, 0},
-    {"CLOCK HEIGHT (RESTART REQUIRED)", true,
-     [](const Config &c) { return fmt3(c.clock_pct); },
-     [](Config &c, int d) {
-       c.clock_pct = std::clamp(c.clock_pct + 0.002f * d, 0.02f, 0.12f);
-     },
-     nullptr, 0},
-    {"DATE HEIGHT (RESTART REQUIRED)", true,
-     [](const Config &c) { return fmt3(c.date_pct); },
-     [](Config &c, int d) {
-       c.date_pct = std::clamp(c.date_pct + 0.001f * d, 0.01f, 0.06f);
-     },
-     nullptr, 0},
-    {"BORDER SHADOW", true,
-     [](const Config &c) { return std::to_string((int)c.edge_fade_alpha); },
-     [](Config &c, int d) {
-       c.edge_fade_alpha =
-           std::clamp(c.edge_fade_alpha + 5.0f * d, 0.0f, 255.0f);
-     },
-     nullptr, 0},
+       if (c.visible_items % 2 == 0) c.visible_items--;
+     }, nullptr, 0},
     {"SHOW GAMEPAD INDICATORS", true,
      [](const Config &c) -> std::string {
-       return c.show_player_indicators ? "SI" : "NO";
+       return c.show_player_indicators ? "YES" : "NO";
      },
-     [](Config &c, int) {
-       c.show_player_indicators = !c.show_player_indicators;
-     },
+     [](Config &c, int) { c.show_player_indicators = !c.show_player_indicators; },
      nullptr, 0},
     {"COLOUR SCHEME", true, [](const Config &c) { return c.theme; },
      [](Config &c, int) { c.theme = (c.theme == "dark") ? "light" : "dark"; },
      nullptr, 0},
-    {"LOOP WP (SEG)", true,
-     [](const Config &c) { return fmt3(c.wallpaper_interval); },
-     [](Config &c, int d) {
-       c.wallpaper_interval =
-           std::clamp(c.wallpaper_interval + 5.0f * d, 5.0f, 600.0f);
-     },
-     nullptr, 0},
-    {"ZOOM WP", true,
-     [](const Config &c) { return fmt3(c.wallpaper_ken_burns_zoom); },
-     [](Config &c, int d) {
-       c.wallpaper_ken_burns_zoom =
-           std::clamp(c.wallpaper_ken_burns_zoom + 0.01f * d, 1.0f, 1.25f);
-     },
-     nullptr, 0},
-    {"FADE WP (SEG)", true,
-     [](const Config &c) { return fmt3(c.wallpaper_fade_duration); },
-     [](Config &c, int d) {
-       c.wallpaper_fade_duration =
-           std::clamp(c.wallpaper_fade_duration + 0.5f * d, 0.2f, 5.0f);
-     },
-     nullptr, 0},
-    {"KENBURNS EFFECT", true,
-     [](const Config &c) -> std::string {
-       return c.wallpaper_ken_burns ? "SI" : "NO";
-     },
-     [](Config &c, int) { c.wallpaper_ken_burns = !c.wallpaper_ken_burns; },
-     nullptr, 0},
     {"HELP ICONS", false, [](const Config &c) { return c.help_icons; }, nullptr,
      [](ShellState &, Config &c, const ShellActions &a) {
-       c.help_icons = (c.help_icons == "xbox")          ? "playstation"
-                      : (c.help_icons == "playstation") ? "none"
-                                                        : "xbox";
-       if (a.reload_ui_icons)
-         a.reload_ui_icons();
-     },
-     0},
+       c.help_icons = (c.help_icons == "xbox") ? "playstation"
+                      : (c.help_icons == "playstation") ? "none" : "xbox";
+       if (a.reload_ui_icons) a.reload_ui_icons();
+     }, 0},
     {"ALL PLAYERS CONTROL UI", true,
-     [](const Config &c) -> std::string {
-       return c.all_players_ui ? "YES" : "NO";
-     },
+     [](const Config &c) -> std::string { return c.all_players_ui ? "YES" : "NO"; },
      [](Config &c, int) { c.all_players_ui = !c.all_players_ui; }, nullptr, 0},
     {"GO BACK", false, nullptr, nullptr,
      [](ShellState &s, Config &c, const ShellActions &) {
-       c.save(c.ini_path); // <-- guardar al salir
+       c.save(c.ini_path);
        s.show_settings = false;
-     },
-     0},
+     }, 0},
 };
 
 const SRow kPowerRows[] = {
@@ -672,7 +599,7 @@ static void drawPanel(ShellState &st, Config &cfg, const ShellActions &actions,
   const SRow *rows = settings ? kSettingsRows : kPowerRows;
   int count = settings ? kSettingsCount : kPowerCount;
   int focus = settings ? st.settings_focus : st.power_focus;
-  const char *title = settings ? "AJUSTES DE INTERFAZ" : "APAGADO DEL EQUIPO";
+  const char *title = settings ? "SETTINGS" : "SHUTDOWN...";
 
   int footer_rows = 1; // GUARDAR+VOLVER / VOLVER
   int list_count = count - footer_rows;
@@ -1036,8 +963,10 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   float sel_size = slot * k;
   float cross_un = cross_axis * cfg.tile_w_pct;
   float cross_sel = cross_axis * cfg.tile_sel_w_pct;
-  float icon_un = cross_axis * cfg.icon_pct * (horizontal ? 1.5f : 1.0f);
-  float icon_sel = cross_axis * cfg.icon_sel_pct * (horizontal ? 1.5f : 1.0f);
+  float icon_un =
+      cross_axis * cfg.icon_pct * (horizontal ? 1.5f : cfg.icon_vert_scale);
+  float icon_sel =
+      cross_axis * cfg.icon_sel_pct * (horizontal ? 1.5f : cfg.icon_vert_scale);
   float pad = cross_axis * 0.012f;
 
   auto centerMain = [&](float d) -> float {

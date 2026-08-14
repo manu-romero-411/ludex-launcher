@@ -1,0 +1,4 @@
+[backend]
+name=retrobox
+exec_start=/var/penguin/juegos/retrobox/retrobox.sh -n
+exec_end=

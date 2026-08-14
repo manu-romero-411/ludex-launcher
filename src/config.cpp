@@ -52,6 +52,15 @@ static std::string joinArgs(const std::vector<std::string> &v) {
   return out;
 }
 
+static std::filesystem::path exeDir() { // <-- mover aquí, antes de defaults
+  char buf[4096];
+  ssize_t n = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+  if (n <= 0)
+    return {};
+  buf[n] = '\0';
+  return std::filesystem::path(buf).parent_path();
+}
+
 /* ------------------------------------------------------------------
  * Valores por defecto. Se aplican SOLO cuando el INI no existe o le
  * falta una clave. Nunca viven en el struct Config (el header está
@@ -63,8 +72,14 @@ namespace defaults {
 static std::filesystem::path appsDir() {
   if (const char *e = std::getenv("LUDEX_APPS_DIR"))
     return e;
-  // Ruta relativa al directorio donde se ejecuta el binario.
-  return std::filesystem::current_path() / "resources" / "apps";
+  std::filesystem::path ed = exeDir();
+  if (!ed.empty()) {
+    std::filesystem::path p = ed / "apps";
+    std::error_code ec;
+    if (std::filesystem::is_directory(p, ec))
+      return p;
+  }
+  return std::filesystem::current_path() / "apps";
 }
 
 static std::filesystem::path wallpaperDir() {
@@ -99,14 +114,6 @@ static std::vector<std::string> iconExts() {
 
 } // namespace defaults
 
-static std::filesystem::path exeDir() {
-  char buf[4096];
-  ssize_t n = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-  if (n <= 0)
-    return {};
-  buf[n] = '\0';
-  return std::filesystem::path(buf).parent_path();
-}
 /* ------------------------------------------------------------------ */
 
 bool Config::load(const std::filesystem::path &path) {
@@ -135,14 +142,9 @@ bool Config::load(const std::filesystem::path &path) {
     side = "left";
   }
   visible_items = ini.getInt(S, "visible_items", visible_items);
-  tile_w_pct = ini.getFloat(S, "tile_w_pct", tile_w_pct);
-  tile_sel_w_pct = ini.getFloat(S, "tile_sel_w_pct", tile_sel_w_pct);
-  tile_sel_ratio = ini.getFloat(S, "tile_sel_ratio", tile_sel_ratio);
   menu_h_pct = ini.getFloat(S, "menu_h_pct", menu_h_pct);
   icon_pct = ini.getFloat(S, "icon_pct", icon_pct);
   icon_sel_pct = ini.getFloat(S, "icon_sel_pct", icon_sel_pct);
-  clock_pct = ini.getFloat(S, "clock_pct", clock_pct);
-  date_pct = ini.getFloat(S, "date_pct", date_pct);
   font_tile_pct = ini.getFloat(S, "font_tile_pct", font_tile_pct);
   edge_fade_pct = ini.getFloat(S, "edge_fade_pct", edge_fade_pct);
   edge_fade_alpha = ini.getFloat(S, "edge_fade_alpha", edge_fade_alpha);
@@ -158,15 +160,18 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
   theme = ini.get(S, "theme", theme); // load
   help_icons = ini.get(S, "help_icons", help_icons);
+  icon_vert_scale = ini.getFloat(S, "icon_vert_scale", icon_vert_scale);
+  wallpaper_rotate =
+      ini.getInt(S, "wallpaper_rotate", wallpaper_rotate ? 1 : 0) != 0;
   all_players_ui =
       ini.getInt(S, "all_players_ui", all_players_ui ? 1 : 0) != 0; // load
   if (help_icons != "xbox" && help_icons != "playstation" &&
       help_icons != "none")
     help_icons = "xbox";
   for (int i = 0; i < MAX_PLAYERS; ++i) {
-      std::string k = "p" + std::to_string(i + 1);
-      controller_guid[i] = ini.get("controllers", k + "_guid", "");
-      controller_name[i] = ini.get("controllers", k + "_name", "");
+    std::string k = "p" + std::to_string(i + 1);
+    controller_guid[i] = ini.get("controllers", k + "_guid", "");
+    controller_name[i] = ini.get("controllers", k + "_name", "");
   }
   icons_dir = ini.get(S, "icons_dir", "");
   {
@@ -240,14 +245,9 @@ bool Config::save(const std::filesystem::path &path) const {
 
   ini.set(S, "side", side);
   ini.set(S, "visible_items", std::to_string(visible_items));
-  ini.set(S, "tile_w_pct", std::to_string(tile_w_pct));
-  ini.set(S, "tile_sel_w_pct", std::to_string(tile_sel_w_pct));
-  ini.set(S, "tile_sel_ratio", std::to_string(tile_sel_ratio));
   ini.set(S, "menu_h_pct", std::to_string(menu_h_pct));
   ini.set(S, "icon_pct", std::to_string(icon_pct));
   ini.set(S, "icon_sel_pct", std::to_string(icon_sel_pct));
-  ini.set(S, "clock_pct", std::to_string(clock_pct));
-  ini.set(S, "date_pct", std::to_string(date_pct));
   ini.set(S, "font_tile_pct", std::to_string(font_tile_pct));
   ini.set(S, "edge_fade_pct", std::to_string(edge_fade_pct));
   ini.set(S, "edge_fade_alpha", std::to_string(edge_fade_alpha));
@@ -263,12 +263,14 @@ bool Config::save(const std::filesystem::path &path) const {
   ini.set(S, "help_icons", help_icons);
   if (!icons_dir.empty())
     ini.set(S, "icons_dir", icons_dir.string());
-  ini.set(S, "all_players_ui", all_players_ui ? "1" : "0"); // save
+  ini.set(S, "all_players_ui", all_players_ui ? "1" : "0");
+  ini.set(S, "icon_vert_scale", std::to_string(icon_vert_scale));
   for (int i = 0; i < MAX_PLAYERS; ++i) {
-      std::string k = "p" + std::to_string(i + 1);
-      ini.set("controllers", k + "_guid", controller_guid[i]);
-      ini.set("controllers", k + "_name", controller_name[i]);
+    std::string k = "p" + std::to_string(i + 1);
+    ini.set("controllers", k + "_guid", controller_guid[i]);
+    ini.set("controllers", k + "_name", controller_name[i]);
   }
+    ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "1" : "0");
   return ini.save(path);
 }
 

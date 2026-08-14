@@ -1,0 +1,4 @@
+[backend]
+name=test
+exec_start=/var/penguin/escritorio/test.sh %CONTROLLERSCONFIG%
+exec_end=
