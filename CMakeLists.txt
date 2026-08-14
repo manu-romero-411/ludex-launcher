@@ -70,6 +70,13 @@ add_executable(ludex-launcher
     src/util.cpp
     src/audio_manager.cpp
     src/application.cpp
+    src/ui/ui_common.cpp
+    src/ui/components.cpp
+    src/ui/system_menu.cpp
+    src/ui/panels.cpp
+    src/ui/tile_carousel.cpp
+    src/ui/wallpaper.cpp
+
 )
 
 target_include_directories(ludex-launcher PRIVATE
