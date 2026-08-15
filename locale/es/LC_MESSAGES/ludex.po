@@ -1,26 +1,269 @@
+# Traducciones al español para ludex-launcher.
+# Este archivo se distribuye bajo la misma licencia que ludex-launcher.
 msgid ""
 msgstr ""
+"Project-Id-Version: ludex-launcher\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-16 12:00+0000\n"
+"PO-Revision-Date: 2026-08-16 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish\n"
 "Language: es\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/ui/panels/pan_mainmenu.cpp
+msgid "SYSTEM"
+msgstr "SISTEMA"
+
+#: src/ui/panels/pan_mainmenu.cpp
+#: src/ui/panels/pan_settings.cpp
 msgid "SETTINGS"
 msgstr "AJUSTES"
 
+#: src/ui/panels/pan_mainmenu.cpp
 msgid "CONTROLLERS"
 msgstr "MANDOS"
 
+#: src/ui/panels/pan_mainmenu.cpp
 msgid "QUIT TO DESKTOP"
 msgstr "SALIR AL ESCRITORIO"
 
+#: src/ui/panels/pan_mainmenu.cpp
+#: src/ui/panels/pan_shutdown.cpp
 msgid "SHUTDOWN..."
-msgstr "APAGAR..."
+msgstr "APAGADO..."
 
-msgid "NAVIGATE"
-msgstr "NAVEGAR"
-
+#: src/ui/panels/pan_mainmenu.cpp
+#: src/ui/panels/pan_settings.cpp
+#: src/ui/panels/pan_shutdown.cpp
+#: src/ui/panels/pan_bluetooth.cpp
+#: src/ui/panels/pan_bluetooth_scan.cpp
+#: src/ui/panels/pan_controllers.cpp
+#: src/ui/widgets/help_hints.cpp
 msgid "BACK"
 msgstr "ATRÁS"
 
+#: src/ui/panels/pan_shutdown.cpp
+msgid "SLEEP"
+msgstr "SUSPENDER"
+
+#: src/ui/panels/pan_shutdown.cpp
+msgid "REBOOT"
+msgstr "REINICIAR"
+
+#: src/ui/panels/pan_shutdown.cpp
+msgid "POWER OFF"
+msgstr "APAGAR"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "APP DRAWER MODE"
+msgstr "POSICIÓN DEL MENÚ DE APPS"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "# VISIBLE ELEMENTS"
+msgstr "# ELEMENTOS VISIBLES"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "SHOW GAMEPAD INDICATORS"
+msgstr "MOSTRAR INDICADORES DE MANDO"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "COLOUR SCHEME"
+msgstr "ESQUEMA DE COLORES"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "HELP ICONS"
+msgstr "ICONOS DE AYUDA"
+
+#: src/ui/panels/pan_settings.cpp
+msgid "ALL PLAYERS CONTROL UI"
+msgstr "TODOS LOS JUGADORES CONTROLAN LA INTERFAZ"
+
+#: src/ui/panels/pan_controllers.cpp
+msgid "CONTROLLER ASSIGNMENT"
+msgstr "ASIGNACIÓN DE MANDOS"
+
+#: src/ui/panels/pan_controllers.cpp
+msgid "PLAYER "
+msgstr "JUGADOR "
+
+#: src/ui/panels/pan_controllers.cpp
+msgid " PAD"
+msgstr " (MANDO)"
+
+#: src/ui/panels/pan_controllers.cpp
+msgid "DEFAULT"
+msgstr "POR DEFECTO"
+
+#: src/ui/panels/pan_controllers.cpp
+#: src/ui/widgets/help_hints.cpp
+#: src/ui/panels/pan_pin.cpp
+msgid "CANCEL"
+msgstr "CANCELAR"
+
+#: src/application.cpp
+#: src/ui/panels/pan_bluetooth.cpp
+#: src/ui/panels/pan_bluetooth_scan.cpp
+#: src/ui/panels/pan_mainmenu.cpp
+msgid "BLUETOOTH"
+msgstr "BLUETOOTH"
+
+#: src/ui/panels/pan_bluetooth_scan.cpp
+msgid "BLUETOOTH SCAN"
+msgstr "BÚSQUEDA BLUETOOTH"
+
+#: src/ui/panels/pan_bluetooth.cpp
+msgid "SCAN NEW DEVICE..."
+msgstr "BUSCAR NUEVO DISPOSITIVO..."
+
+#: src/ui/panels/pan_bluetooth_scan.cpp
+msgid "SCANNING... ("
+msgstr "BUSCANDO... ("
+
+#: src/ui/panels/pan_bluetooth_scan.cpp
+msgid "s)"
+msgstr "s)"
+
+#: src/ui/panels/pan_bluetooth_scan.cpp
+msgid "PAIRING... "
+msgstr "EMPAREJANDO... "
+
+#: src/ui/panels/pan_bluetooth.cpp
+msgid "CONNECTING... "
+msgstr "CONECTANDO... "
+
+#: src/ui/panels/pan_bluetooth.cpp
+msgid "DISCONNECTING... "
+msgstr "DESCONECTANDO... "
+
+#: src/application.cpp
+msgid "SCANNING..."
+msgstr "BUSCANDO..."
+
+#: src/application.cpp
+msgid "SCAN FINISHED"
+msgstr "BÚSQUEDA FINALIZADA"
+
+#: src/application.cpp
+msgid "CONNECTED: "
+msgstr "CONECTADO: "
+
+#: src/application.cpp
+msgid "CONNECTION FAILED: "
+msgstr "CONEXIÓN FALLIDA: "
+
+#: src/application.cpp
+msgid "DISCONNECTED: "
+msgstr "DESCONECTADO: "
+
+#: src/application.cpp
+msgid "DISCONNECT FAILED: "
+msgstr "FALLO AL DESCONECTAR: "
+
+#: src/application.cpp
+msgid "PAIRING..."
+msgstr "EMPAREJANDO..."
+
+#: src/application.cpp
+msgid "PAIRED: "
+msgstr "EMPAREJADO: "
+
+#: src/application.cpp
+msgid "PAIRING FAILED: "
+msgstr "EMPAREJADO FALLIDO: "
+
+#: src/application.cpp
+msgid "PIN REQUIRED: "
+msgstr "PIN REQUERIDO: "
+
+#: src/application.cpp
+msgid "UNLINKED: "
+msgstr "DESVINCULADO: "
+
+#: src/application.cpp
+msgid "UNLINK FAILED: "
+msgstr "FALLO AL DESVINCULAR: "
+
+#: src/ui/panels/pan_pin.cpp
+msgid "PIN"
+msgstr "PIN"
+
+#: src/ui/panels/pan_pin.cpp
+msgid "DELETE"
+msgstr "BORRAR"
+
+#: src/ui/panels/pan_pin.cpp
+msgid "OK"
+msgstr "OK"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "UP/DOWN"
+msgstr "ARRIBA/ABAJO"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "LEFT/RIGHT"
+msgstr "IZQUIERDA/DERECHA"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "NAVIGATE"
+msgstr "NAVEGAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "CHANGE"
+msgstr "CAMBIAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "SELECT"
+msgstr "SELECCIONAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "ACCEPT"
+msgstr "ACEPTAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "ASSIGN"
+msgstr "ASIGNAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "PAIR"
+msgstr "EMPAREJAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "CONNECT"
+msgstr "CONECTAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "UNLINK"
+msgstr "DESVINCULAR"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "A"
+msgstr "A"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "B"
+msgstr "B"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "HOME"
+msgstr "INICIO"
+
+#: src/ui/widgets/help_hints.cpp
+msgid "SYSTEM MENU"
+msgstr "MENÚ DEL SISTEMA"
+
+#: src/ui/panels/pan_controllers.cpp
+msgid "PAD FOR PLAYER {}"
+msgstr "MANDO DEL JUGADOR {}"
+
+#: src/ui/panels/pan_controllers.cpp
+msgid "OFFLINE ({})"
+msgstr "SIN CONEXIÓN ({})"
+
+# fecha
 msgid "%A %d %B %Y"
 msgstr "%A %d de %B de %Y"
 

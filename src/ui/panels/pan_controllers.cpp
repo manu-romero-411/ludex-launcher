@@ -1,7 +1,7 @@
 #include "pan_controllers.h"
-#include "../../core/i18n.h"
-#include "../../input/input_manager.h"
-
+#include "core/i18n.h"
+#include "input/input_manager.h"
+#include <format>
 namespace ui::panels {
 
 namespace {
@@ -10,11 +10,12 @@ std::string assignmentLabel(const Config &cfg,
                             const std::vector<InputManager::DeviceInfo> &devs,
                             int p) {
   if (cfg.controller_guid[p].empty())
-    return "DEFAULT";
+    return _("DEFAULT");
   for (const auto &d : devs)
     if (d.guid == cfg.controller_guid[p])
       return "#" + std::to_string(d.sdl_index) + " " + d.name;
-  return "OFFLINE (" + cfg.controller_name[p] + ")";
+  return std::vformat(_("OFFLINE ({})"),
+                      std::make_format_args(cfg.controller_name[p]));
 }
 
 } // anonymous namespace
@@ -65,8 +66,9 @@ PanelSpec makeControllersPanelSpec(ShellState &st, Config &cfg,
 
   } else {
     // Modo picking: seleccionar dispositivo para un player
+    int player_num = st.controller_pick_player + 1;
     spec.title =
-        "PAD FOR PLAYER " + std::to_string(st.controller_pick_player + 1);
+        std::vformat(_("PAD FOR PLAYER {}"), std::make_format_args(player_num));
     spec.focus_ptr = &st.controller_pick_focus;
     spec.scroll_ptr = &st.settings_scroll;
     spec.on_back = [](ShellState &s, Config &) {

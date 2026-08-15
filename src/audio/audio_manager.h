@@ -2,6 +2,7 @@
 #include <atomic>
 #include <filesystem>
 #include <random>
+#include <string>
 #include <vector>
 
 struct Mix_Music;

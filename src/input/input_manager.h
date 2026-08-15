@@ -100,11 +100,9 @@ private:
 
   std::vector<Slot> slots_;
   std::vector<int> order_;
-
   std::unordered_map<SDL_JoystickID, int> instance_to_slot_;
-
+  std::unordered_map<int, size_t> slot_index_; // id de slot -> índice en slots_
   std::queue<UiInput> queue_;
-
   int next_slot_id_ = 0;
 
   static constexpr Sint16 DEADZONE = 16000;

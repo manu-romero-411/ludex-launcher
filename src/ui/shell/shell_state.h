@@ -55,17 +55,12 @@ struct UiIcons {
 };
 
 struct DragState {
-    bool mouse_down = false;
+    bool down = false;
     bool drag_active = false;
-    float mouse_down_x = 0.0f;
-    float mouse_down_y = 0.0f;
-    bool finger_down = false;
-    bool touch_drag_active = false;
-    float finger_down_x = 0.0f;
-    float finger_down_y = 0.0f;
+    float down_x = 0.0f;
+    float down_y = 0.0f;
     void reset() { *this = DragState{}; }
 };
-
 struct ShellState {
     std::vector<App> apps;
     int selected = 0;
@@ -125,6 +120,10 @@ struct ShellState {
     float panel_anim_duration = 0.18f;
     int panel_last_id = 0;
 
+    // NUEVO: token de invalidación de specs cacheados. Se incrementa cuando
+    // cambian datos que alimentan los paneles (lista BT, mandos, escaneo…).
+    int panel_cache_token = 0;
+    void invalidatePanels() { ++panel_cache_token; }
     void nextWallpaper(Renderer &renderer, int screen_w, int screen_h);
     void updateDrag(float dt);
     void refresh(const Config &cfg, const BackendRegistry &backends);

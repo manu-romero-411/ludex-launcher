@@ -22,17 +22,15 @@ bool InputManager::init() {
 }
 
 void InputManager::shutdown() {
-  closeControllers();
-
-  slots_.clear();
-  order_.clear();
-  instance_to_slot_.clear();
-
-  while (!queue_.empty()) {
-    queue_.pop();
-  }
-
-  SDL_QuitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
+    closeControllers();
+    slots_.clear();
+    order_.clear();
+    instance_to_slot_.clear();
+    slot_index_.clear();
+    while (!queue_.empty()) {
+        queue_.pop();
+    }
+    SDL_QuitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
 }
 
 void InputManager::closeControllers() {
@@ -237,15 +235,13 @@ int InputManager::createOrFindSlotForGuid(const std::string &guid) {
     }
   }
 
-  Slot slot;
-  slot.id = next_slot_id_++;
-  slot.guid = guid;
-
-  slots_.push_back(slot);
-  order_.push_back(slot.id);
-
-  return slot.id;
-}
+    Slot slot;
+    slot.id = next_slot_id_++;
+    slot.guid = guid;
+    slot_index_[slot.id] = slots_.size(); // índice donde se va a insertar
+    slots_.push_back(slot);
+    order_.push_back(slot.id);
+    return slot.id;}
 
 int InputManager::findOrderIndexBySlotId(int slot_id) const {
   auto it = std::find(order_.begin(), order_.end(), slot_id);
@@ -266,23 +262,17 @@ int InputManager::playerForInstance(SDL_JoystickID instance) const {
 }
 
 InputManager::Slot *InputManager::slotById(int slot_id) {
-  for (auto &slot : slots_) {
-    if (slot.id == slot_id) {
-      return &slot;
-    }
-  }
-
-  return nullptr;
+    auto it = slot_index_.find(slot_id);
+    if (it == slot_index_.end())
+        return nullptr;
+    return &slots_[it->second];
 }
 
 const InputManager::Slot *InputManager::slotById(int slot_id) const {
-  for (const auto &slot : slots_) {
-    if (slot.id == slot_id) {
-      return &slot;
-    }
-  }
-
-  return nullptr;
+    auto it = slot_index_.find(slot_id);
+    if (it == slot_index_.end())
+        return nullptr;
+    return &slots_[it->second];
 }
 
 void InputManager::push(int player, UiAction action) {

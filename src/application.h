@@ -22,10 +22,9 @@ private:
   void processEvents(float dt);
   void handleAction(UiAction a);
   void handleKeyboard(const SDL_Event &e);
-  void handleMouseDrag(const SDL_Event &e);
-  void handleTouchDrag(const SDL_Event &e);
+  void handleDragEvent(const SDL_Event &e);
   void handleBtEvent(const BtEvent &ev);
-  
+
   Uint64 bt_refresh_last_ = 0;
   SDL_Surface *loadWindowIcon();
   std::filesystem::path runtimeDir();
@@ -61,4 +60,5 @@ private:
   int sw_ = 0, sh_ = 0;
   Uint64 last_time_ = 0;
   Uint64 bt_rescan_time_ = 0;
+  Uint32 input_ignore_until_ = 0; // timestamp hasta el cual ignorar inputs
 };

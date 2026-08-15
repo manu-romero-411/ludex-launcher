@@ -5,8 +5,64 @@
 #include "ui/ui_input_handlers.h"
 #include "util.h"
 #include <SDL_image.h>
+#include <cmath>
 #include <imgui_impl_sdl2.h>
 #include <iostream>
+
+namespace {
+
+struct DragEventInfo {
+  bool is_down = false;
+  bool is_up = false;
+  bool is_motion = false;
+  float x = 0.0f;
+  float y = 0.0f;
+};
+
+DragEventInfo classifyDragEvent(const SDL_Event &e, int sw, int sh) {
+  DragEventInfo info;
+  switch (e.type) {
+  case SDL_MOUSEBUTTONDOWN:
+    if (e.button.button == SDL_BUTTON_LEFT) {
+      info.is_down = true;
+      info.x = (float)e.button.x;
+      info.y = (float)e.button.y;
+    }
+    break;
+  case SDL_MOUSEBUTTONUP:
+    if (e.button.button == SDL_BUTTON_LEFT) {
+      info.is_up = true;
+      info.x = (float)e.button.x;
+      info.y = (float)e.button.y;
+    }
+    break;
+  case SDL_MOUSEMOTION:
+    info.is_motion = true;
+    info.x = (float)e.motion.x;
+    info.y = (float)e.motion.y;
+    break;
+  case SDL_FINGERDOWN:
+    info.is_down = true;
+    info.x = e.tfinger.x * (float)sw;
+    info.y = e.tfinger.y * (float)sh;
+    break;
+  case SDL_FINGERUP:
+    info.is_up = true;
+    info.x = e.tfinger.x * (float)sw;
+    info.y = e.tfinger.y * (float)sh;
+    break;
+  case SDL_FINGERMOTION:
+    info.is_motion = true;
+    info.x = e.tfinger.x * (float)sw;
+    info.y = e.tfinger.y * (float)sh;
+    break;
+  default:
+    break;
+  }
+  return info;
+}
+
+} // namespace
 
 std::filesystem::path Application::runtimeDir() {
   if (const char *rd = std::getenv("XDG_RUNTIME_DIR"))
@@ -71,11 +127,9 @@ void Application::setupActions() {
       input_.rescanControllers();
       app_running_ = false;
       SDL_RaiseWindow(window_);
-      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
-      // Pequeño delay para evitar inputs residuales
-      SDL_Delay(50);
-      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+      // Ignorar inputs residuales durante 100ms sin bloquear el hilo
+      input_ignore_until_ = SDL_GetTicks() + 100;
 
       backends_.loadAll();
       shell_.refresh(cfg_, backends_);
@@ -298,11 +352,11 @@ int Application::run() {
                        (double)SDL_GetPerformanceFrequency();
       if (elapsed > 1.0) {
         input_.rescanControllers();
+        shell_.invalidatePanels(); // NUEVO
         bt_rescan_pending_ = false;
         SDL_Log("[ludex] InputManager rescan tras BT connect/disconnect");
       }
     }
-
     if (want_quit_)
       running_ = false;
 
@@ -322,6 +376,7 @@ int Application::run() {
         last_time_ = SDL_GetPerformanceCounter();
       }
     }
+    shell_.updatePanelAnimation(dt); 
 
     renderer_->beginFrame();
     shell_.icon_cache.beginFrame();
@@ -348,17 +403,11 @@ void Application::shutdown() {
 
 void Application::processEvents(float dt) {
   SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    // Bloquear completamente cuando una app está corriendo o hay fade activo
-    if (app_running_ || app_fade_active_) {
-      if (event.type == SDL_QUIT ||
-          (event.type == SDL_WINDOWEVENT &&
-           event.window.event == SDL_WINDOWEVENT_CLOSE)) {
-        running_ = false;
-      }
-      continue;
-    }
+  Uint32 now = SDL_GetTicks();
+  bool ignoring_inputs = (now < input_ignore_until_);
 
+  while (SDL_PollEvent(&event)) {
+    // Siempre procesar eventos críticos del sistema
     if (event.type == SDL_QUIT ||
         (event.type == SDL_WINDOWEVENT &&
          event.window.event == SDL_WINDOWEVENT_CLOSE)) {
@@ -366,8 +415,23 @@ void Application::processEvents(float dt) {
       continue;
     }
 
-    if (app_running_)
+    // Bloquear completamente cuando una app está corriendo o hay fade activo
+    if (app_running_ || app_fade_active_) {
       continue;
+    }
+
+    // Si estamos en período de ignorancia, descartar eventos de input
+    // pero seguir procesando eventos del sistema (device add/remove, etc.)
+    if (ignoring_inputs) {
+      // Permitir eventos de dispositivos (para que el rescan funcione)
+      if (event.type == SDL_CONTROLLERDEVICEADDED ||
+          event.type == SDL_CONTROLLERDEVICEREMOVED ||
+          event.type == SDL_JOYDEVICEADDED ||
+          event.type == SDL_JOYDEVICEREMOVED) {
+        input_.handleEvent(event);
+      }
+      continue;
+    }
 
     ImGui_ImplSDL2_ProcessEvent(&event);
 
@@ -383,12 +447,19 @@ void Application::processEvents(float dt) {
       }
     }
 
-    handleMouseDrag(event);
-    handleTouchDrag(event);
+    handleDragEvent(event);
+        
+    // Si cambia la lista de mandos, invalidar specs cacheados
+    if (event.type == SDL_CONTROLLERDEVICEADDED ||
+        event.type == SDL_CONTROLLERDEVICEREMOVED ||
+        event.type == SDL_JOYDEVICEADDED ||
+        event.type == SDL_JOYDEVICEREMOVED) {
+      shell_.invalidatePanels();
+    }
+
     input_.handleEvent(event);
   }
 }
-
 void Application::handleKeyboard(const SDL_Event &e) {
   switch (e.key.keysym.sym) {
   case SDLK_UP:
@@ -414,27 +485,31 @@ void Application::handleKeyboard(const SDL_Event &e) {
   case SDLK_HOME:
     handleAction(UiAction::Guide);
     break;
-        case SDLK_F5:
-            backends_.loadAll();
-            shell_.refresh(cfg_, backends_);
-            break;
+  case SDLK_F5:
+    backends_.loadAll();
+    shell_.refresh(cfg_, backends_);
+    break;
   case SDLK_x:
     handleAction(UiAction::Alt);
     break;
-        case SDLK_w:
-            shell_.nextWallpaper(*renderer_, sw_, sh_);
-            break;
-        case SDLK_F6:
-            shell_.wallpapers.discover(cfg_);
-            shell_.wallpapers.loadInitial(*renderer_, sw_, sh_);
-            break;
+  case SDLK_w:
+    shell_.nextWallpaper(*renderer_, sw_, sh_);
+    break;
+  case SDLK_F6:
+    shell_.wallpapers.discover(cfg_);
+    shell_.wallpapers.loadInitial(*renderer_, sw_, sh_);
+    break;
   default:
     break;
   }
 }
 
-void Application::handleMouseDrag(const SDL_Event &e) {
+void Application::handleDragEvent(const SDL_Event &e) {
   static constexpr float DRAG_THRESHOLD = 12.0f;
+
+  DragEventInfo info = classifyDragEvent(e, sw_, sh_);
+  if (!info.is_down && !info.is_up && !info.is_motion)
+    return;
 
   auto axisPos = [this](float px, float py) -> float {
     return isHorizontal(cfg_.side) ? px : py;
@@ -453,10 +528,8 @@ void Application::handleMouseDrag(const SDL_Event &e) {
     float main_axis = isHorizontal(cfg_.side) ? (float)sw_ : (float)sh_;
     float slot_size =
         main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
-
     float delta_px = pos - shell_.drag_start_pos;
     shell_.offset = shell_.drag_start_offset - delta_px / slot_size;
-
     Uint32 now = SDL_GetTicks();
     float dt_ms = (float)(now - shell_.drag_last_time);
     if (dt_ms > 1.0f) {
@@ -473,104 +546,32 @@ void Application::handleMouseDrag(const SDL_Event &e) {
       shell_.drag_velocity = 0.0f;
   };
 
-  if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+  if (info.is_down) {
     if (!shell_.anyPanelOpen()) {
-      drag_.mouse_down = true;
+      drag_.down = true;
       drag_.drag_active = false;
-      drag_.mouse_down_x = (float)e.button.x;
-      drag_.mouse_down_y = (float)e.button.y;
-      startDragState(drag_.mouse_down_x, drag_.mouse_down_y);
+      drag_.down_x = info.x;
+      drag_.down_y = info.y;
+      startDragState(info.x, info.y);
     }
   }
-  if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT) {
+  if (info.is_up) {
     if (drag_.drag_active)
       endDrag();
-    drag_.mouse_down = false;
+    drag_.down = false;
     drag_.drag_active = false;
   }
-  if (e.type == SDL_MOUSEMOTION) {
-    if (drag_.mouse_down && !drag_.drag_active) {
-      float dx = (float)e.motion.x - drag_.mouse_down_x;
-      float dy = (float)e.motion.y - drag_.mouse_down_y;
+  if (info.is_motion) {
+    if (drag_.down && !drag_.drag_active) {
+      float dx = info.x - drag_.down_x;
+      float dy = info.y - drag_.down_y;
       if (std::sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
         drag_.drag_active = true;
         shell_.dragging = true;
       }
     }
     if (drag_.drag_active) {
-      doDrag((float)e.motion.x, (float)e.motion.y);
-    }
-  }
-}
-
-void Application::handleTouchDrag(const SDL_Event &e) {
-  static constexpr float DRAG_THRESHOLD = 12.0f;
-
-  auto axisPos = [this](float px, float py) -> float {
-    return isHorizontal(cfg_.side) ? px : py;
-  };
-  auto startDragState = [this, &axisPos](float px, float py) {
-    float pos = axisPos(px, py);
-    shell_.drag_start_pos = pos;
-    shell_.drag_start_offset = shell_.offset;
-    shell_.drag_last_pos = pos;
-    shell_.drag_last_time = SDL_GetTicks();
-    shell_.drag_velocity = 0.0f;
-    shell_.has_momentum = false;
-  };
-  auto doDrag = [this, &axisPos](float px, float py) {
-    float pos = axisPos(px, py);
-    float main_axis = isHorizontal(cfg_.side) ? (float)sw_ : (float)sh_;
-    float slot_size =
-        main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
-
-    float delta_px = pos - shell_.drag_start_pos;
-    shell_.offset = shell_.drag_start_offset - delta_px / slot_size;
-
-    Uint32 now = SDL_GetTicks();
-    float dt_ms = (float)(now - shell_.drag_last_time);
-    if (dt_ms > 1.0f) {
-      float px_delta = pos - shell_.drag_last_pos;
-      shell_.drag_velocity = -(px_delta / dt_ms) * 1000.0f / slot_size;
-    }
-    shell_.drag_last_pos = pos;
-    shell_.drag_last_time = now;
-  };
-  auto endDrag = [this]() {
-    shell_.dragging = false;
-    shell_.has_momentum = (std::fabs(shell_.drag_velocity) > 2.0f);
-    if (!shell_.has_momentum)
-      shell_.drag_velocity = 0.0f;
-  };
-
-  if (e.type == SDL_FINGERDOWN) {
-    if (!shell_.anyPanelOpen()) {
-      drag_.finger_down = true;
-      drag_.touch_drag_active = false;
-      drag_.finger_down_x = e.tfinger.x * (float)sw_;
-      drag_.finger_down_y = e.tfinger.y * (float)sh_;
-      startDragState(drag_.finger_down_x, drag_.finger_down_y);
-    }
-  }
-  if (e.type == SDL_FINGERUP) {
-    if (drag_.touch_drag_active)
-      endDrag();
-    drag_.finger_down = false;
-    drag_.touch_drag_active = false;
-  }
-  if (e.type == SDL_FINGERMOTION) {
-    float fx = e.tfinger.x * (float)sw_;
-    float fy = e.tfinger.y * (float)sh_;
-    if (drag_.finger_down && !drag_.touch_drag_active) {
-      float dx = fx - drag_.finger_down_x;
-      float dy = fy - drag_.finger_down_y;
-      if (std::sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
-        drag_.touch_drag_active = true;
-        shell_.dragging = true;
-      }
-    }
-    if (drag_.touch_drag_active) {
-      doDrag(fx, fy);
+      doDrag(info.x, info.y);
     }
   }
 }
@@ -661,6 +662,7 @@ void Application::renderAppFade() {
 }
 
 void Application::handleBtEvent(const BtEvent &ev) {
+  shell_.invalidatePanels(); // invalidar specs cacheados
   void *ic = shell_.ui_icons.bluetooth.get();
   auto &T = shell_.toasts;
   const std::string name = ev.name.empty() ? ev.mac : ev.name;

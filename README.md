@@ -1,134 +1,146 @@
 # Ludex Launcher
 
-A modern 10-foot launcher for Linux gaming and media centers, designed for TV screens and game controllers.
+A modern 10-foot launcher for Linux gaming and HTPC/media centers, designed for TV screens and remote/game controllers.
+
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](#)
+[![Language](https://img.shields.io/badge/C%2B%2B-20%2B-blue.svg)](#)
 
 ![Ludex Launcher](screenshot.png)
 
 ## Features
 
-- **Controller-first UI**: Navigate with D-pad or analog stick, optimized for couch gaming. It should work with TV remotes attached to the PC, too.
-- **Multiple backends**: Launch web apps, emulators, or custom commands via configurable backends.
-- **Dynamic wallpapers**: Ken Burns effect with smooth crossfade transitions.
-- **Audio support**: Background music and UI sound effects.
-- **Multi-controller support**: Up to 8 players with individual controller assignment.
-- **Vertical/horizontal layouts**: Configurable drawer position (left/right/top/bottom).
-- **Dark/light themes**: not very elaborate, but work fine.
-- **Wayland native**. X11 is also working.
+### User Interface
+- **Controller-first navigation**: Optimized for D-pad/analog stick with hold-to-repeat
+- **Multiple layouts**: Vertical (left/right) or horizontal (top/bottom) drawer positioning
+- **Dynamic wallpapers**: Ken Burns effect with smooth crossfade transitions
+- **Dark/light themes**: Automatic color scheme adaptation
+- **Internationalization**: Full gettext support (Spanish included, extensible)
+- **Touch/mouse support**: Drag gestures with momentum physics
+
+### System Integration
+- **Multi-controller support**: Up to 8 players with individual GUID-based assignment
+- **Bluetooth management**: Built-in device pairing with PIN/passkey support
+- **Audio system**: Background music with shuffle + UI sound effects
+- **Backend system**: Flexible app launching via configurable command templates
+- **IR remote support**: LIRC integration (compile-time option)
+
+### Performance
+- **Lazy loading**: Icons and wallpapers loaded on-demand with LRU cache
+- **Efficient rendering**: SDL2 + ImGui with GPU-accelerated 2D renderer
+- **Optimized data structures**: O(1) lookups for controllers and backends
+- **Minimal VRAM usage**: O(2) wallpaper memory (current + next for crossfade)
 
 ## Building from Source
 
-### Build dependencies
+### Prerequisites
 
 #### Debian/Ubuntu
 
 ```bash
 sudo apt update
 sudo apt install \
+    build-essential \
+    cmake \
+    ninja-build \
     libsdl2-dev \
     libsdl2-image-dev \
     libsdl2-mixer-dev \
-    libvulkan-dev \
     librsvg2-dev \
     libcairo2-dev \
-    cmake \
-    ninja-build \
-    g++
+    gettext
 ```
 
 #### Fedora
 
 ```bash
 sudo dnf install \
+    gcc-c++ \
+    cmake \
+    ninja-build \
     SDL2-devel \
     SDL2_image-devel \
     SDL2_mixer-devel \
-    vulkan-loader-devel \
     librsvg2-devel \
     cairo-devel \
-    cmake \
-    ninja-build \
-    gcc-c++
+    gettext
 ```
 
 #### Arch Linux
 
 ```bash
 sudo pacman -S \
+    base-devel \
+    cmake \
+    ninja \
     sdl2 \
     sdl2_image \
     sdl2_mixer \
-    vulkan-icd-loader \
     librsvg \
     cairo \
-    cmake \
-    ninja \
-    gcc
+    gettext
 ```
-### Build instructions:
 
-Clone and build:
+### Compilation
 
 ```bash
 git clone https://github.com/manu-romero-411/ludex-launcher.git
 cd ludex-launcher
 
-cmake -B build -G Ninja
+# Configure and build
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-```
-Run:
 
-```
+# Run
 ./build/ludex-launcher
 ```
 
-### Build Options
+### Installation
 
 ```bash
-# Release build
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+# Install to /opt/ludex (requires sudo)
+sudo cmake --install build --prefix /opt/ludex
 
-# Install to /opt/ludex
-cmake --install build --prefix /opt/ludex
-```
-
-### Docker
-
-A Dockerfile is included for easy deployment.
-
-```bash
-# Build image
-docker build -t ludex-launcher .
-
-# Run with X11 forwarding
-docker run -it \
-    --env DISPLAY=$DISPLAY \
-    --volume /tmp/.X11-unix:/tmp/.X11-unix \
-    --device /dev/dri \
-    ludex-launcher
+# Or install to user directory
+cmake --install build --prefix ~/.local
 ```
 
 ## Configuration
 
-Configuration is stored in `~/.config/ludex/ludex-launcher.ini`
+Configuration is stored in `~/.config/ludex/ludex-launcher.ini` and created automatically on first run.
 
-### Key Settings
+### UI Settings
 
 ```ini
 [ludex-launcher]
-# UI Layout
+# Layout
 side=left                    # left, right, top, bottom
-visible_items=7              # Number of visible app tiles (odd number)
+visible_items=7              # Number of visible tiles (must be odd, 3-11)
 theme=dark                   # dark or light
+language=es                  # en, es, fr, de, it (empty = system default)
+
+# Visual
+wallpaper_dir=~/Pictures/wallpapers
+wallpaper_interval=60        # Seconds between wallpaper changes
+wallpaper_ken_burns=1        # Enable zoom/pan effect
+wallpaper_fade_duration=2.0  # Crossfade duration in seconds
 
 # Audio
-music_dir=/path/to/music     # Background music directory
-# Leave empty to use default locations
+music_dir=~/Music            # Background music directory
+# Leave empty to use: ./music, ~/.config/ludex/music, or /usr/share/ludex/music
+```
 
-# Controller assignment
-# Empty = auto-assign by connection order
+### Controller Assignment
+
+Controllers are assigned by GUID (persistent across reboots):
+
+```ini
 [controllers]
 p1_guid=030000006d04000012c2000011010000
 p1_name=Logitech F310
+p2_guid=030000005e0400008e02000010010000
+p2_name=Xbox 360 Controller
+# Leave empty for auto-assignment by connection order
 ```
 
 ## Directory Structure
@@ -136,19 +148,27 @@ p1_name=Logitech F310
 ```
 /opt/ludex/
 ├── ludex-launcher              # Executable
+├── locale/                     # Translations (.mo files)
+│   └── es/LC_MESSAGES/ludex.mo
 ├── resources/
-│   ├── icons/                  # UI icons (SVG/PNG)
+│   ├── icons/                  # UI icons (SVG preferred)
 │   │   ├── settings.svg
 │   │   ├── exit.svg
+│   │   ├── bluetooth.svg
 │   │   └── help/
 │   │       ├── xbox/
 │   │       └── playstation/
-│   └── sounds/
-│       ├── scroll.wav
-│       └── select.wav
-└── backends/                   # Backend definitions
+│   ├── sounds/
+│   │   ├── scroll.wav
+│   │   └── select.wav
+│   └── wallpapers/             # Default wallpapers
+├── apps/                       # App definitions (.webapp files)
+│   ├── RetroArch.webapp
+│   └── Steam.webapp
+└── backends/                   # Backend command templates
+    ├── retroarch.backend
     ├── webapp.backend
-    └── retroarch.backend
+    └── steam.backend
 ```
 
 ### App Definitions
@@ -159,81 +179,168 @@ Create `.webapp` files in your apps directory:
 [ludex-element]
 name=RetroArch
 backend=retroarch
-run=
-icon=retroarch.png
-tile_type=flat
+run=                           # Optional: specific ROM or command
+icon=retroarch.svg             # Relative to apps/app-icons/ or absolute path
+tile_type=gradient2            # flat or gradient2
 color1=#333333
+color2=#666666
+icon_color=#ffffff             # Tint color for monochrome icons
+text_color=#ffffff             # Override text color (optional)
 ```
 
-### Backend Example
+### Backend Templates
+
+Backends define command templates with placeholders:
 
 ```ini
 [backend]
 name=retroarch
-exec_start=retroarch -f %CONTROLLERSCONFIG%
-exec_end=
+exec_start=retroarch -f %CONTROLLERSCONFIG% %RUN%
+exec_end=                      # Optional cleanup command (future)
 ```
 
-## Controller Support
+**Available placeholders:**
+- `%RUN%` or `%URL%`: The `run` value from the app definition
+- `%APP%`: Quoted path to the .webapp file
+- `%CONTROLLERSCONFIG%`: Controller configuration string
+- `%CONTROLLERSFILE%`: Path to generated controller config file
 
-- **Any SDL-compatible controller**: Button labels are only from Xbox and PlayStation for now.
-- **IR remotes (not tested)**: LIRC support (compile with `-DHAVE_LIRC=ON`)
+**Example backends:**
 
-### Assigning Controllers
+```ini
+# Web browser kiosk
+[backend]
+name=webapp
+exec_start=chromium --kiosk --app=%URL%
 
-1. Press `HOME` or `F1` to open system menu
-2. Select "CONTROLLERS"
-3. Assign each connected controller to a player slot
-4. Configuration is saved automatically
+# Emulator with controller mapping
+[backend]
+name=retroarch
+exec_start=retroarch -f %CONTROLLERSFILE% %RUN%
 
-## Keyboard Shortcuts
+# Steam Big Picture
+[backend]
+name=steam
+exec_start=steam -tenfoot -silent
+```
+
+## Controls
+
+### Gamepad
+
+- **D-pad / Left Stick**: Navigate
+- **A / Cross**: Select
+- **B / Circle**: Back
+- **X / Square**: Alternate action (e.g., unlink Bluetooth device)
+- **Start**: Menu
+- **Guide / Home**: System menu
+
+### Keyboard
 
 - `↑↓←→` or `WASD`: Navigate
-- `Enter` or `Space`: Select
-- `Escape`: Back/Close menu
-- `F1` or `Home`: Open system menu
+- `Enter` / `Space`: Select
+- `Escape`: Back
+- `F1` or `Home`: System menu
 - `F5`: Reload apps and backends
+- `W`: Next wallpaper
+- `F6`: Rediscover wallpapers
 
-## Dependencies
+### Mouse / Touch
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| SDL2 | 2.0.14+ | Window, input, events |
-| SDL2_image | 2.0.5+ | Image loading |
-| SDL2_mixer | 2.0.4+ | Audio playback |
-| Dear ImGui | 1.89+ | Immediate mode GUI |
-| stb_image | 2.28+ | Image decoding |
-| stb_image_resize | 2.0+ | High-quality resizing |
-| librsvg | 2.50+ | SVG rendering |
+- **Click**: Select
+- **Drag**: Scroll carousel with momentum
+- **Scroll wheel**: Navigate
 
-## License
+## Architecture
 
-This software is distributed under the terms of the GNU GPLv2 license - see [LICENSE](LICENSE) file for details
+### Core Components
 
-## Credits
+- **ShellState**: Central state container for UI, apps, and panels
+- **PanelSpec/RowDefinition**: Declarative panel system with automatic rendering
+- **WallpaperManager**: Lazy loading with O(2) VRAM (current + crossfade)
+- **IconCache**: LRU cache for app icons with on-demand loading
+- **BluetoothManager**: Async Bluetooth operations with worker thread
+- **InputManager**: Multi-controller support with GUID-based assignment
 
-- **Dear ImGui**: [https://github.com/ocornut/imgui](https://github.com/ocornut/imgui)
-- **SDL2**: [https://www.libsdl.org](https://www.libsdl.org)
-- **stb libraries**: [https://github.com/nothings/stb](https://github.com/nothings/stb)
+### Performance Optimizations
+
+- **Icon caching**: LRU cache avoids reloading textures (4-frame TTL)
+- **Wallpaper lazy loading**: Only 2 wallpapers in VRAM at any time
+- **Panel spec caching**: Rebuild only when data changes (token-based invalidation)
+- **Unified drag handling**: Single code path for mouse/touch input
+- **Efficient lookups**: `unordered_map` for controllers and backends (O(1))
+
+## Internationalization
+
+Ludex uses gettext for translations:
+
+```bash
+# Extract translatable strings
+xgettext -o locale/ludex.pot --from-code=UTF-8 \
+    src/ui/panels/*.cpp \
+    src/ui/widgets/*.cpp \
+    src/application.cpp
+
+# Create translation (example for Spanish)
+msginit -i locale/ludex.pot -o locale/es/LC_MESSAGES/ludex.po -l es
+
+# Edit .po file, then compile
+msgfmt -o locale/es/LC_MESSAGES/ludex.mo locale/es/LC_MESSAGES/ludex.po
+```
+
+Set `language=es` in the INI file to use Spanish.
 
 ## Troubleshooting
 
 ### No audio
-- Check SDL2_mixer installation
-- Verify audio files exist in music/sounds directories
-- Check system audio settings (PulseAudio/PipeWire)
+- Verify SDL2_mixer is installed
+- Check music files exist in the configured directory
+- Ensure PulseAudio/PipeWire is running
+- Try: `SDL_AUDIODRIVER=pulseaudio ./ludex-launcher`
 
 ### Controllers not detected
-- Ensure SDL2 gamecontrollerdb.txt is installed
-- Check `SDL_GAMECONTROLLERCONFIG` environment variable
-- Verify controller is in XInput or DirectInput mode
+- Install `gamecontrollerdb.txt` or set `SDL_GAMECONTROLLERCONFIG`
+- Check controller is in XInput mode (not DirectInput)
+- Verify with: `sdl2-jstest --list`
+- Check logs: `SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1`
 
-### Blank screen
-- Check Vulkan drivers are installed
-- Try `SDL_VIDEODRIVER=x11` for X11 fallback
-- Check logs in terminal output
+### Blank screen or crash
+- Try X11 fallback: `SDL_VIDEODRIVER=x11 ./ludex-launcher`
+- Check GPU drivers are installed
+- Run with debug output to see errors
 
 ### Apps not appearing
-- Verify `.webapp` files are in the correct directory
-- Check backend definitions exist
-- Run with terminal to see error messages
+- Verify `.webapp` files are in the apps directory
+- Check backend definitions exist in `backends/`
+- Ensure backend name matches the `backend=` field in the app
+- Run from terminal to see error messages
+
+### Bluetooth issues
+- Ensure `bluetoothctl` is installed and working
+- Check Bluetooth service is running: `systemctl status bluetooth`
+- Verify permissions: user should be in `bluetooth` group
+
+## Dependencies
+
+| Library | Purpose |
+|---------|---------|
+| SDL2 | Window management, input, events |
+| SDL2_image | Image loading (PNG, JPG, WEBP) |
+| SDL2_mixer | Audio playback |
+| Dear ImGui | Immediate mode GUI framework |
+| stb_image | Image decoding (fallback) |
+| stb_image_resize2 | High-quality image resizing |
+| librsvg | SVG rendering (optional, improves quality) |
+| cairo | 2D graphics (required by librsvg) |
+| gettext | Internationalization |
+
+## License
+
+Distributed under the GNU GPL v2. See [LICENSE](LICENSE) for details.
+
+## Credits
+
+- **[Dear ImGui](https://github.com/ocornut/imgui)**: Immediate mode GUI
+- **[SDL2](https://www.libsdl.org)**: Simple DirectMedia Layer
+- **[stb libraries](https://github.com/nothings/stb)**: Single-file public domain libraries
+- **[librsvg](https://wiki.gnome.org/Projects/LibRsvg)**: SVG rendering library

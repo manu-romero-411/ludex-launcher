@@ -20,6 +20,35 @@ ui::widgets::EdgeFades g_edge_fades;
 ui::widgets::HelpHints g_help_hints;
 ui::widgets::PlayerIndicators g_player_indicators;
 ui::widgets::TileCarousel g_tile_carousel;
+
+// NUEVO: caché de PanelSpec para no reconstruirlo cada frame.
+struct PanelCache {
+  int panel_id = -1;
+  int token = -1;
+  ui::panels::PanelSpec spec;
+};
+PanelCache g_panel_cache;
+PanelCache g_pin_cache;
+
+ui::panels::PanelSpec buildPanelSpec(int id, ShellState &state, Config &cfg,
+                                     const ShellActions &actions) {
+  switch (id) {
+  case 1:
+    return ui::panels::makeSettingsPanelSpec(state, cfg, actions);
+  case 2:
+    return ui::panels::makeShutdownPanelSpec(state, actions);
+  case 3:
+    return ui::panels::makeControllersPanelSpec(state, cfg, actions);
+  case 4:
+    return ui::panels::makeBluetoothPanelSpec(state, cfg, actions);
+  case 5:
+    return ui::panels::makeBluetoothScanPanelSpec(state, cfg, actions);
+  case 6:
+    return ui::panels::makeSystemPanelSpec(state, actions);
+  default:
+    return {};
+  }
+}
 } // namespace
 
 void drawShellImGui(ShellState &state, Config &cfg,
@@ -53,46 +82,77 @@ void drawShellImGui(ShellState &state, Config &cfg,
   g_edge_fades.draw(cfg, W, H);
   g_tile_carousel.draw(state, cfg, actions, W, H, panel_open);
 
-  // --- Paneles (usando el renderer genérico) ---
-  switch (state.drawPanelId()) {
-  case 1: {
-    auto s = ui::panels::makeSettingsPanelSpec(state, cfg, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  case 2: {
-    auto s = ui::panels::makeShutdownPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  case 3: {
-    auto s = ui::panels::makeControllersPanelSpec(state, cfg, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  case 4: {
-    auto s = ui::panels::makeBluetoothPanelSpec(state, cfg, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  case 5: {
-    auto s = ui::panels::makeBluetoothScanPanelSpec(state, cfg, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  case 6: {
-    auto s = ui::panels::makeSystemPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(s, state, cfg, actions);
-    break;
-  }
-  default:
-    break;
+  // --- Paneles (usando el renderer genérico + caché) ---
+  {
+    int panel_id = state.drawPanelId();
+    bool need_rebuild = false;
+    int cache_token = 0;
+
+    switch (panel_id) {
+    case 0: // sin panel: reseteamos el caché
+      g_panel_cache.panel_id = 0;
+      g_panel_cache.token = -1;
+      break;
+
+    // Paneles estáticos: solo reconstruir al cambiar de panel
+    case 1:
+    case 2:
+    case 6:
+      cache_token = 0;
+      need_rebuild = (g_panel_cache.panel_id != panel_id);
+      break;
+
+    // Controllers: depende de la lista de mandos y del modo picking
+    case 3:
+      cache_token =
+          state.panel_cache_token * 16 + (state.controller_pick_player + 1);
+      need_rebuild = (g_panel_cache.panel_id != panel_id ||
+                      g_panel_cache.token != cache_token);
+      break;
+
+    // Bluetooth: depende de la lista de dispositivos
+    case 4:
+      cache_token = state.panel_cache_token;
+      need_rebuild = (g_panel_cache.panel_id != panel_id ||
+                      g_panel_cache.token != cache_token);
+      break;
+
+    // Bluetooth Scan: depende del estado de escaneo y del contador
+    case 5: {
+      int rem = (actions.bluetooth_scan_remaining)
+                    ? actions.bluetooth_scan_remaining()
+                    : 0;
+      bool scanning =
+          (actions.bluetooth_scanning) && actions.bluetooth_scanning();
+      cache_token =
+          state.panel_cache_token * 100 + rem * 2 + (scanning ? 1 : 0);
+      need_rebuild = (g_panel_cache.panel_id != panel_id ||
+                      g_panel_cache.token != cache_token);
+      break;
+    }
+
+    default:
+      break;
+    }
+
+    if (panel_id != 0) {
+      if (need_rebuild) {
+        g_panel_cache.panel_id = panel_id;
+        g_panel_cache.token = cache_token;
+        g_panel_cache.spec = buildPanelSpec(panel_id, state, cfg, actions);
+      }
+      ui::panels::drawGenericPanel(g_panel_cache.spec, state, cfg, actions);
+    }
   }
 
   // Modal PIN por encima de cualquier panel
   if (state.show_pin) {
-    auto spec = ui::panels::makePinPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(spec, state, cfg, actions);
+    int pin_token = state.panel_cache_token;
+    if (g_pin_cache.token != pin_token) {
+      g_pin_cache.token = pin_token;
+      g_pin_cache.spec = ui::panels::makePinPanelSpec(state, actions);
+    }
+    ui::panels::drawGenericPanel(g_pin_cache.spec, state, cfg, actions);
   }
   // --- Widgets de HUD ---
   bool horizontal = isHorizontal(cfg.side);

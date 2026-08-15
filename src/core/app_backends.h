@@ -1,7 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -20,7 +20,7 @@ public:
 
 private:
     void loadDir(const std::filesystem::path& dir);
-    std::map<std::string, Backend> backends_;
+        std::unordered_map<std::string, Backend> backends_;
 };
 
 /* Sustituye %URL%/%RUN%, %APP% y %CONTROLLERSCONFIG% en exec_start

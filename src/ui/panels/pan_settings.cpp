@@ -49,7 +49,7 @@ PanelSpec makeSettingsPanelSpec(ShellState &st, Config &cfg,
 
       {_("SHOW GAMEPAD INDICATORS"), RowKind::Toggle, RowIcon::None,
        [](const Config &c) -> std::string {
-         return c.show_player_indicators ? "YES" : "NO";
+         return c.show_player_indicators ? _("YES") : _("NO");
        },
        [](Config &c, int) {
          c.show_player_indicators = !c.show_player_indicators;
@@ -83,7 +83,7 @@ PanelSpec makeSettingsPanelSpec(ShellState &st, Config &cfg,
 
       {_("ALL PLAYERS CONTROL UI"), RowKind::Toggle, RowIcon::None,
        [](const Config &c) -> std::string {
-         return c.all_players_ui ? "YES" : "NO";
+         return c.all_players_ui ? _("YES") : _("NO");
        },
        [](Config &c, int) { c.all_players_ui = !c.all_players_ui; }, nullptr},
 
