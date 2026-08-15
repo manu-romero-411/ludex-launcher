@@ -1,8 +1,0 @@
-[ludex-element]
-name=YouTube
-backend=chrome
-run=https://www.youtube.com
-icon=app-icons/youtube.svg
-icon_color=#ffffff
-tile_type=flat
-color1=#ff0000

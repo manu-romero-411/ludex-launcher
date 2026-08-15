@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include "../../input/input_manager.h"
+#include "core/bluetooth_manager.h"
 
 struct App;
 struct ShellState;
@@ -20,4 +21,17 @@ struct ShellActions {
     std::function<void()> open_controllers;
     std::function<void()> apply_controllers;
     std::function<std::vector<InputManager::DeviceInfo>()> devices;
+
+    // Bluetooth
+    std::function<bool()> bluetooth_available;
+    std::function<void()> bluetooth_scan;
+    std::function<void(const std::string&)> bluetooth_pair;
+    std::function<void(const std::string&)> bluetooth_connect;
+    std::function<void(const std::string&)> bluetooth_disconnect;
+    std::function<void(const std::string&)> bluetooth_remove;
+    std::function<std::vector<BluetoothDevice>()> bluetooth_devices;
+    std::function<bool()> bluetooth_scanning;
+    std::function<int()> bluetooth_scan_remaining;
+    std::function<void()> open_bluetooth;
+std::function<std::vector<BluetoothDevice>()> bluetooth_discovered;
 };

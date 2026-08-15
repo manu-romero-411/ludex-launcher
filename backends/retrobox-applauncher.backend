@@ -1,0 +1,4 @@
+[backend]
+name=retrobox-applauncher
+exec_start=/usr/bin/python3 /var/penguin/juegos/retrobox/runtime/launcher/emulatorlauncher.py %CONTROLLERSCONFIG% -system apps -rom %APP% -systemname "Apps"
+exec_end=

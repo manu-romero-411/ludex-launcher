@@ -8,7 +8,7 @@
 #include "../render/renderer.h"
 
 struct WallpaperLayer {
-    TexturePtr texture;
+  TexturePtr texture;
   int w = 0, h = 0;
   float kb_scale = 1.0f;
   float kb_pan_x = 0.0f, kb_pan_y = 0.0f;
@@ -17,43 +17,48 @@ struct WallpaperLayer {
 enum class RowIcon { None, Settings, Exit, Shutdown, Restart, Suspend };
 
 struct UiIcons {
-    TexturePtr settings;
-    TexturePtr exit;
-    TexturePtr shutdown;
-    TexturePtr restart;
-    TexturePtr suspend;
-    TexturePtr nav_v;
-    TexturePtr nav_h;
-    TexturePtr accept;
-    TexturePtr back;
-    TexturePtr home;
-    TexturePtr gamepad;
+  TexturePtr settings;
+  TexturePtr exit;
+  TexturePtr shutdown;
+  TexturePtr restart;
+  TexturePtr suspend;
+  TexturePtr nav_v;
+  TexturePtr nav_h;
+  TexturePtr accept;
+  TexturePtr back;
+  TexturePtr home;
+  TexturePtr gamepad;
 
-void *byIndex(RowIcon icon) const {
+  void *byIndex(RowIcon icon) const {
     switch (icon) {
-    case RowIcon::Settings: return settings.get();
-    case RowIcon::Exit:     return exit.get();
-    case RowIcon::Shutdown: return shutdown.get();
-    case RowIcon::Restart:  return restart.get();
-    case RowIcon::Suspend:  return suspend.get();
-    default:                return nullptr;
+    case RowIcon::Settings:
+      return settings.get();
+    case RowIcon::Exit:
+      return exit.get();
+    case RowIcon::Shutdown:
+      return shutdown.get();
+    case RowIcon::Restart:
+      return restart.get();
+    case RowIcon::Suspend:
+      return suspend.get();
+    default:
+      return nullptr;
     }
-}};
+  }
+};
 
 struct DragState {
-    bool mouse_down = false;
-    bool drag_active = false;
-    float mouse_down_x = 0.0f;
-    float mouse_down_y = 0.0f;
+  bool mouse_down = false;
+  bool drag_active = false;
+  float mouse_down_x = 0.0f;
+  float mouse_down_y = 0.0f;
 
-    bool finger_down = false;
-    bool touch_drag_active = false;
-    float finger_down_x = 0.0f;
-    float finger_down_y = 0.0f;
+  bool finger_down = false;
+  bool touch_drag_active = false;
+  float finger_down_x = 0.0f;
+  float finger_down_y = 0.0f;
 
-    void reset() {
-        *this = DragState{};
-    }
+  void reset() { *this = DragState{}; }
 };
 
 struct ShellState {
@@ -104,7 +109,12 @@ struct ShellState {
   bool tile_pressed = false;
   int tile_pressed_id = -1;
   void nextWallpaper();
-    int pending_launch = -1;
+  int pending_launch = -1;
+
+  bool show_bluetooth = false;
+  int bluetooth_focus = 0;
+  bool show_bluetooth_scan = false;
+  int bluetooth_scan_focus = 0;
 
 private:
   static constexpr float LERP_RATE = 10.0f;

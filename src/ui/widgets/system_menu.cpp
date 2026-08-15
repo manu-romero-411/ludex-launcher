@@ -29,10 +29,12 @@ void SystemMenu::draw(ShellState &state, const Config &cfg,
   float total = menu_h * 4.0f;
   float y_base = H - total * state.menu_anim;
 
-  static const char *labels[4] = {"SETTINGS", "CONTROLLERS", "QUIT TO DESKTOP",
-                                  "SHUTDOWN..."};
-  void *icons[4] = {state.ui_icons.settings.get(), state.ui_icons.gamepad.get(),
-                    state.ui_icons.exit.get(), state.ui_icons.shutdown.get()};
+  static const char *labels[5] = {"SETTINGS", "BLUETOOTH", "CONTROLLERS",
+                                  "QUIT TO DESKTOP", "SHUTDOWN..."};
+  void *icons[5] = {state.ui_icons.settings.get(),
+                    state.ui_icons.gamepad.get(), // TODO: icono bluetooth
+                    state.ui_icons.gamepad.get(), state.ui_icons.exit.get(),
+                    state.ui_icons.shutdown.get()};
   for (int m = 0; m < 4; ++m) {
     float y0 = y_base + m * menu_h;
     ImVec2 min(left ? 0.0f : W - menu_w, y0);
@@ -49,9 +51,11 @@ void SystemMenu::draw(ShellState &state, const Config &cfg,
         state.menu_selected = m;
         if (m == 0) {
           actions.open_settings();
-        } else if (m == 1 && actions.open_controllers) {
+        } else if (m == 1 && actions.open_bluetooth) {
+          actions.open_bluetooth();
+        } else if (m == 2 && actions.open_controllers) {
           actions.open_controllers();
-        } else if (m == 2) {
+        } else if (m == 3) {
           actions.quit();
         } else {
           state.show_power = true;

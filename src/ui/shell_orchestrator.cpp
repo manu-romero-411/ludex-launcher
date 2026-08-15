@@ -1,4 +1,6 @@
 #include "shell_orchestrator.h"
+#include "panels/pan_bluetooth.h"
+#include "panels/pan_bluetooth_scan.h"
 #include "panels/pan_controllers.h"
 #include "panels/pan_settings.h"
 #include "panels/pan_shutdown.h"
@@ -85,6 +87,16 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   } else if (state.show_controllers) {
     auto spec =
         ui::panels::makeControllersPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
+  } else if (state.show_bluetooth) {
+    auto spec = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
+  } else if (state.show_bluetooth_scan) {
+    auto spec =
+        ui::panels::makeBluetoothScanPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
+  } else if (state.show_bluetooth) {
+    auto spec = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
     ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
   } else {
     if (state.menu_anim > 0.001f) {

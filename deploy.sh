@@ -8,11 +8,10 @@ strip build-release/ludex-launcher
 
 install -d "$PREFIX/resources" "$PREFIX/backends" "$HOME/.local/bin"
 install -m 755 build-release/ludex-launcher "$PREFIX/"
-cp -r apps "$PREFIX/apps"
-cp -r resources/icons "$PREFIX/resources/"
-cp -r resources/sounds "$PREFIX/resources/"
+cp -r apps "$PREFIX/"
+cp -r resources/ "$PREFIX/"
 cp -r music/ "$PREFIX/"
-cp -r backends/*.backend "$PREFIX/backends/"
+cp -r backends/ "$PREFIX/"
 
 # symlink en tu PATH de usuario (sin root)
 ln -sf "$PREFIX/ludex-launcher" "$HOME/.local/bin/ludex-launcher"

@@ -1,6 +1,6 @@
 #include "application.h"
-#include "ui/assets.h"
 #include "core/launcher.h"
+#include "ui/assets.h"
 #include "ui/ui_input_handlers.h"
 #include "util.h"
 #include <SDL_image.h>
@@ -97,6 +97,13 @@ bool Application::init() {
   audio_.startMusic();
 
   backends_.loadAll();
+
+  if (bluetooth_.available()) {
+    bluetooth_.refresh();
+    SDL_Log("[ludex] Bluetooth available");
+  } else {
+    SDL_Log("[ludex] Bluetooth not available");
+  }
 
   if (!input_.init()) {
     SDL_DestroyWindow(window_);
@@ -207,6 +214,53 @@ void Application::setupActions() {
     input_.applyAssignment(guids);
   };
   actions_.devices = [this] { return input_.devices(); };
+
+  actions_.open_bluetooth = [this] {
+    shell_.show_bluetooth = true;
+    shell_.menu_open = false;
+    shell_.bluetooth_focus = 0;
+  };
+  actions_.bluetooth_available = [this] { return bluetooth_.available(); };
+  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
+  actions_.bluetooth_connect = [this](const std::string &mac) {
+    bluetooth_.connect(mac);
+  };
+  actions_.bluetooth_disconnect = [this](const std::string &mac) {
+    bluetooth_.disconnect(mac);
+  };
+  actions_.bluetooth_remove = [this](const std::string &mac) {
+    bluetooth_.removeDevice(mac);
+  };
+  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
+  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
+  actions_.bluetooth_scan_remaining = [this] {
+    return bluetooth_.scanRemainingSec();
+  };
+  actions_.bluetooth_discovered = [this] {
+    return bluetooth_.discoveredDevices();
+  };
+  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
+  actions_.bluetooth_pair = [this](const std::string &mac) {
+    bluetooth_.pair(mac);
+  };
+  actions_.bluetooth_connect = [this](const std::string &mac) {
+    bluetooth_.connect(mac);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+  };
+  actions_.bluetooth_disconnect = [this](const std::string &mac) {
+    bluetooth_.disconnect(mac);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+  };
+  actions_.bluetooth_remove = [this](const std::string &mac) {
+    bluetooth_.removeDevice(mac);
+  };
+  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
+  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
+  actions_.bluetooth_scan_remaining = [this] {
+    return bluetooth_.scanRemainingSec();
+  };
 }
 
 int Application::run() {
@@ -229,11 +283,25 @@ int Application::run() {
     }
 
     if (!shell_.show_settings && !shell_.show_power &&
-        !shell_.show_controllers) {
+        !shell_.show_controllers && !shell_.show_bluetooth &&
+        !shell_.show_bluetooth_scan) {
       shell_.update(dt, cfg_);
     }
-    audio_.update(); // Para procesar el flag de fin de música
 
+    audio_.update();
+    bluetooth_.setAutoRefresh(shell_.show_bluetooth); // <-- NUEVO
+    bluetooth_.update();
+    // Rescan diferido tras conectar/desconectar BT
+    if (bt_rescan_pending_) {
+      Uint64 now = SDL_GetPerformanceCounter();
+      double elapsed = (double)(now - bt_rescan_time_) /
+                       (double)SDL_GetPerformanceFrequency();
+      if (elapsed > 1.0) {
+        input_.rescanControllers();
+        bt_rescan_pending_ = false;
+        SDL_Log("[ludex] InputManager rescan tras BT connect/disconnect");
+      }
+    }
     if (want_quit_)
       running_ = false;
 
@@ -329,16 +397,23 @@ void Application::handleKeyboard(const SDL_Event &e) {
     backends_.loadAll();
     shell_.refresh(cfg_, backends_);
     {
-        int icon_max = (int)(sh_ * cfg_.icon_sel_pct * 2.0f);
-        for (auto &app : shell_.apps) {
-            if (!app.icon_path.empty() && !app.icon_texture) {
-                app.icon_texture = TexturePtr(
-                    renderer_->loadTextureFromFile(
-                        app.icon_path, nullptr, nullptr, icon_max,
-                        app.has_icon_tint ? &app.icon_tint : nullptr),
-                    TextureDeleter{renderer_.get()});
-            }
+      int icon_max = (int)(sh_ * cfg_.icon_sel_pct * 2.0f);
+      for (auto &app : shell_.apps) {
+        if (!app.icon_path.empty() && !app.icon_texture) {
+          app.icon_texture =
+              TexturePtr(renderer_->loadTextureFromFile(
+                             app.icon_path, nullptr, nullptr, icon_max,
+                             app.has_icon_tint ? &app.icon_tint : nullptr),
+                         TextureDeleter{renderer_.get()});
         }
+      }
+    }
+    break;
+  case SDLK_b: // debug temporal
+    bluetooth_.refresh();
+    for (const auto &d : bluetooth_.devices()) {
+      SDL_Log("[BT] %s | %s | paired=%d connected=%d", d.mac.c_str(),
+              d.name.c_str(), d.paired, d.connected);
     }
     break;
   case SDLK_w:
@@ -501,7 +576,9 @@ void Application::handleAction(UiAction a) {
     controllersInput(shell_, cfg_, actions_, a);
     return;
   }
-  if (shell_.show_settings || shell_.show_power) {
+
+  if (shell_.show_settings || shell_.show_power || shell_.show_bluetooth ||
+      shell_.show_bluetooth_scan) {
     panelInput(shell_, cfg_, actions_, a);
     return;
   }
@@ -547,13 +624,17 @@ void Application::handleAction(UiAction a) {
         actions_.open_settings();
         break;
       case 1:
+        if (actions_.open_bluetooth)
+          actions_.open_bluetooth();
+        break;
+      case 2:
         if (actions_.open_controllers)
           actions_.open_controllers();
         break;
-      case 2:
+      case 3:
         want_quit_ = true;
         break;
-      case 3:
+      case 4:
       default:
         shell_.show_power = true;
         shell_.menu_open = false;

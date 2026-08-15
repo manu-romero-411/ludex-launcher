@@ -128,11 +128,11 @@ void InputManager::addDeviceByIndex(int device_index) {
     slot->name = name_c;
 
   instance_to_slot_[instance] = slot_id;
+  recomputePlayers();
 
-  SDL_Log("Mando detectado: player=%d name='%s' guid=%s",
-          findOrderIndexBySlotId(slot_id), slot->name.c_str(),
-          slot->guid.c_str());
-}
+SDL_Log("Gamepad detected: player=%d name='%s' guid=%s",
+        slot->assigned_player, slot->name.c_str(),
+        slot->guid.c_str());}
 
 void InputManager::removeDevice(SDL_JoystickID instance) {
   auto it = instance_to_slot_.find(instance);
@@ -161,6 +161,7 @@ void InputManager::removeDevice(SDL_JoystickID instance) {
   }
 
   instance_to_slot_.erase(it);
+  recomputePlayers();
 }
 
 void InputManager::handleEvent(const SDL_Event &event) {
@@ -509,4 +510,3 @@ std::vector<InputManager::DeviceInfo> InputManager::devices() const {
   }
   return out;
 }
-

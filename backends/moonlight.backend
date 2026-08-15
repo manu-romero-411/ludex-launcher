@@ -1,0 +1,4 @@
+[backend]
+name=moonlight
+exec_start=moonlight
+exec_end=

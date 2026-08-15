@@ -84,7 +84,10 @@ add_executable(ludex-launcher
     src/core/config.cpp
     src/core/ini.cpp
     src/core/launcher.cpp
-
+    src/core/bluetooth_manager.cpp
+    src/core/bluetooth_manager.cpp
+    src/ui/panels/pan_bluetooth.cpp
+    src/ui/panels/pan_bluetooth_scan.cpp
 )
 
 target_include_directories(ludex-launcher PRIVATE

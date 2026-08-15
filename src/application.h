@@ -1,5 +1,6 @@
 #include "audio/audio_manager.h"
 #include "core/app_backends.h"
+#include "core/bluetooth_manager.h"
 #include "core/config.h"
 #include "input/input_manager.h"
 #include "input/ir_input.h"
@@ -38,10 +39,14 @@ private:
   std::unique_ptr<IrInput> ir_;
   DragState drag_;
   ShellActions actions_;
+  BluetoothManager bluetooth_;
 
+  bool bt_rescan_pending_ = false;
   bool running_ = false;
   bool want_quit_ = false;
   bool app_running_ = false;
   int sw_ = 0, sh_ = 0;
   Uint64 last_time_ = 0;
+  Uint64 bt_rescan_time_ = 0;
+
 };

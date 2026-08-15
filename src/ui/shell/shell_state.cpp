@@ -30,76 +30,86 @@ void ShellState::nav(int dy) {
 }
 
 void ShellState::navMenu(int dy) {
-  menu_selected = std::clamp(menu_selected + dy, 0, 3);
+  menu_selected = std::clamp(menu_selected + dy, 0, 4);
 }
 
 void ShellState::updateDrag(float dt) {
-    if (!has_momentum || dragging) return;
-    float n = (float)apps.size();
-    if (n <= 0) return;
+  if (!has_momentum || dragging)
+    return;
+  float n = (float)apps.size();
+  if (n <= 0)
+    return;
 
-    offset += drag_velocity * dt;
-    drag_velocity *= std::pow(0.05f, dt); // decae más rápido
+  offset += drag_velocity * dt;
+  drag_velocity *= std::pow(0.05f, dt); // decae más rápido
 
-    if (std::fabs(drag_velocity) < 0.5f) {
-        has_momentum = false;
-        drag_velocity = 0.0f;
-        // Snap al tile más cercano
-        selected = ((int)std::round(offset) % (int)n + (int)n) % (int)n;
-    }
+  if (std::fabs(drag_velocity) < 0.5f) {
+    has_momentum = false;
+    drag_velocity = 0.0f;
+    // Snap al tile más cercano
+    selected = ((int)std::round(offset) % (int)n + (int)n) % (int)n;
+  }
 }
 
 void ShellState::update(float dt, const Config &cfg) {
-    int n = (int)apps.size();
+  int n = (int)apps.size();
 
-    // Solo LERP hacia selected cuando NO hay drag ni momentum activo.
-    // Si el usuario está arrastrando o hay inercia, el offset es "suyo"
-    // y no debemos interferir.
-    if (n > 0 && !dragging && !has_momentum) {
-        float delta = wrapHalf((float)selected - offset, n);
-        float alpha = std::min(1.0f, LERP_RATE * dt);
-        offset += delta * alpha;
-    }
+  // Solo LERP hacia selected cuando NO hay drag ni momentum activo.
+  // Si el usuario está arrastrando o hay inercia, el offset es "suyo"
+  // y no debemos interferir.
+  if (n > 0 && !dragging && !has_momentum) {
+    float delta = wrapHalf((float)selected - offset, n);
+    float alpha = std::min(1.0f, LERP_RATE * dt);
+    offset += delta * alpha;
+  }
 
-    // Menú sistema
-    float target = menu_open ? 1.0f : 0.0f;
-    menu_anim += (target - menu_anim) * std::min(1.0f, 12.0f * dt);
-    if (std::fabs(target - menu_anim) < 0.001f) menu_anim = target;
+  // Menú sistema
+  float target = menu_open ? 1.0f : 0.0f;
+  menu_anim += (target - menu_anim) * std::min(1.0f, 12.0f * dt);
+  if (std::fabs(target - menu_anim) < 0.001f)
+    menu_anim = target;
 
-    // Ken Burns + crossfade (sin cambios)
-    if (wallpapers.empty()) { updateDrag(dt); return; }
+  // Ken Burns + crossfade (sin cambios)
+  if (wallpapers.empty()) {
+    updateDrag(dt);
+    return;
+  }
 
-    auto animateLayer = [&](int idx) {
-        if (idx < 0 || idx >= (int)wallpapers.size()) return;
-        WallpaperLayer &L = wallpapers[idx];
-        float a = std::min(1.0f, 0.15f * dt);
-        L.kb_scale += (cfg.wallpaper_ken_burns_zoom - L.kb_scale) * a;
-    };
+  auto animateLayer = [&](int idx) {
+    if (idx < 0 || idx >= (int)wallpapers.size())
+      return;
+    WallpaperLayer &L = wallpapers[idx];
+    float a = std::min(1.0f, 0.15f * dt);
+    L.kb_scale += (cfg.wallpaper_ken_burns_zoom - L.kb_scale) * a;
+  };
 
-      if (!wp_in_transition && wp_current >= 0) {
-    if (cfg.wallpaper_ken_burns) animateLayer(wp_current);
+  if (!wp_in_transition && wp_current >= 0) {
+    if (cfg.wallpaper_ken_burns)
+      animateLayer(wp_current);
     wp_timer += dt;
     if (cfg.wallpaper_rotate && wp_timer >= cfg.wallpaper_interval) {
       nextWallpaper();
     }
   }
 
-    if (wp_in_transition && wp_next >= 0) {
-        if (cfg.wallpaper_ken_burns) animateLayer(wp_next);
-        float fade_speed = (cfg.wallpaper_fade_duration > 0.001f)
-                               ? 1.0f / cfg.wallpaper_fade_duration : 1000.0f;
-        wp_fade -= fade_speed * dt;
-        if (wp_fade <= 0.0f) {
-            wp_fade = 0.0f;
-            wp_current = wp_next;
-            wp_next = -1;
-            wp_in_transition = false;
-            wp_fade = 1.0f;
-            wp_timer = 0.0f;
-        }
+  if (wp_in_transition && wp_next >= 0) {
+    if (cfg.wallpaper_ken_burns)
+      animateLayer(wp_next);
+    float fade_speed = (cfg.wallpaper_fade_duration > 0.001f)
+                           ? 1.0f / cfg.wallpaper_fade_duration
+                           : 1000.0f;
+    wp_fade -= fade_speed * dt;
+    if (wp_fade <= 0.0f) {
+      wp_fade = 0.0f;
+      wp_current = wp_next;
+      wp_next = -1;
+      wp_in_transition = false;
+      wp_fade = 1.0f;
+      wp_timer = 0.0f;
     }
+  }
 
-    updateDrag(dt);
+  updateDrag(dt);
 }
 
 const App *ShellState::selectedApp() const {
@@ -107,7 +117,6 @@ const App *ShellState::selectedApp() const {
     return nullptr;
   return &apps[selected];
 }
-
 
 void ShellState::nextWallpaper() {
   if (wallpapers.size() < 2 || wp_in_transition)

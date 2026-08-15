@@ -1,9 +1,0 @@
-[ludex-element]
-name=Crunchyroll
-backend=chrome
-run=https://crunchyroll.com
-icon=app-icons/crunchyroll.svg
-tile_type=flat
-color1=#FF5E00
-icon_color=#ffffff
-
