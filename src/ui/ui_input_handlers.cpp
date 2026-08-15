@@ -7,6 +7,7 @@
 #include "panels/panel_renderer.h"
 #include "shell/shell_state.h"
 #include "ui/panels/pan_mainmenu.h"
+#include "ui/panels/pan_pin.h"
 
 void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
                       UiAction a) {
@@ -82,11 +83,34 @@ void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
   }
 }
 
-void panelInput(ShellState &st, Config &cfg, const ShellActions &actions, UiAction a) {
-    if (st.show_system) {
-        auto spec = ui::panels::makeSystemPanelSpec(st, actions);
-        ui::panels::handlePanelAction(spec, st, cfg, actions, a);
-    } else if (st.show_settings) {
+void panelInput(ShellState &st, Config &cfg, const ShellActions &actions,
+                UiAction a) {
+  // El modal PIN tiene prioridad absoluta
+  if (st.show_pin) {
+    if (a == UiAction::Back || a == UiAction::Guide) {
+      if (actions.bluetooth_cancel_pin)
+        actions.bluetooth_cancel_pin();
+      st.show_pin = false;
+      return;
+    }
+    auto spec = ui::panels::makePinPanelSpec(st, actions);
+    ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+    return;
+  }
+  // Desvincular dispositivo con X (Alt) en el panel Bluetooth
+  if (a == UiAction::Alt && st.show_bluetooth) {
+    auto spec = ui::panels::makeBluetoothPanelSpec(st, cfg, actions);
+    int f = st.bluetooth_focus;
+    if (f >= 0 && f < (int)spec.rows.size() && !spec.rows[f].tag.empty()) {
+      if (actions.bluetooth_remove)
+        actions.bluetooth_remove(spec.rows[f].tag);
+    }
+    return;
+  }
+  if (st.show_system) {
+    auto spec = ui::panels::makeSystemPanelSpec(st, actions);
+    ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+  } else if (st.show_settings) {
     auto spec = ui::panels::makeSettingsPanelSpec(st, cfg, actions);
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   } else if (st.show_power) {
@@ -96,6 +120,14 @@ void panelInput(ShellState &st, Config &cfg, const ShellActions &actions, UiActi
     auto spec = ui::panels::makeBluetoothPanelSpec(st, cfg, actions);
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   } else if (st.show_bluetooth_scan) {
+
+    // Si pulsaron B (Back) o Guide, cancelamos el escaneo antes de cerrar el
+    // panel.
+    if ((a == UiAction::Back || a == UiAction::Guide) &&
+        actions.bluetooth_cancel_scan) {
+      actions.bluetooth_cancel_scan();
+    }
+
     auto spec = ui::panels::makeBluetoothScanPanelSpec(st, cfg, actions);
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   }

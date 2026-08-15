@@ -130,9 +130,9 @@ void InputManager::addDeviceByIndex(int device_index) {
   instance_to_slot_[instance] = slot_id;
   recomputePlayers();
 
-SDL_Log("Gamepad detected: player=%d name='%s' guid=%s",
-        slot->assigned_player, slot->name.c_str(),
-        slot->guid.c_str());}
+  SDL_Log("Gamepad detected: player=%d name='%s' guid=%s",
+          slot->assigned_player, slot->name.c_str(), slot->guid.c_str());
+}
 
 void InputManager::removeDevice(SDL_JoystickID instance) {
   auto it = instance_to_slot_.find(instance);
@@ -199,6 +199,9 @@ void InputManager::handleEvent(const SDL_Event &event) {
       break;
     case SDL_CONTROLLER_BUTTON_B:
       push(player, UiAction::Back);
+      break;
+    case SDL_CONTROLLER_BUTTON_X: // X en Xbox / Cuadrado en PS
+      push(player, UiAction::Alt);
       break;
     case SDL_CONTROLLER_BUTTON_START:
       push(player, UiAction::Menu);

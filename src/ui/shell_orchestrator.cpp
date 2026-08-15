@@ -6,6 +6,7 @@
 #include "panels/pan_shutdown.h"
 #include "panels/panel_renderer.h"
 #include "ui/panels/pan_mainmenu.h"
+#include "ui/panels/pan_pin.h"
 #include "widgets/clock.h"
 #include "widgets/edge_fades.h"
 #include "widgets/help_hints.h"
@@ -113,6 +114,11 @@ void drawShellImGui(ShellState &state, const Config &cfg,
     break;
   }
 
+  // Modal PIN por encima de cualquier panel
+  if (state.show_pin) {
+    auto spec = ui::panels::makePinPanelSpec(state, actions);
+    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
+  }
   // --- Widgets de HUD ---
   bool horizontal = isHorizontal(cfg.side);
   bool left = (cfg.side == LayoutSide::Left);
@@ -127,7 +133,7 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   if (!panel_open) {
     g_help_hints.draw(state, cfg, vp);
   }
-
+  state.toasts.draw(dl, W, H, isLight(cfg.theme));
   ImGui::End();
   ImGui::PopStyleVar();
 }

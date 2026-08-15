@@ -24,6 +24,9 @@ private:
   void handleKeyboard(const SDL_Event &e);
   void handleMouseDrag(const SDL_Event &e);
   void handleTouchDrag(const SDL_Event &e);
+  void handleBtEvent(const BtEvent &ev);
+  
+  Uint64 bt_refresh_last_ = 0;
   SDL_Surface *loadWindowIcon();
   std::filesystem::path runtimeDir();
 

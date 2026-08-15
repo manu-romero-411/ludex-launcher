@@ -50,12 +50,14 @@ PanelSpec makeBluetoothScanPanelSpec(ShellState &st, Config &cfg,
       row.kind = RowKind::Activator;
       row.icon = iconForKind(dev.kind);
       row.icon_col = COL_DISCOVERED;
-      row.on_select = [&actions, mac = dev.mac](ShellState &s, Config &,
-                                                const ShellActions &) {
+      row.on_select = [&actions, mac = dev.mac, name = dev.name](
+                          ShellState &s, Config &, const ShellActions &) {
         if (actions.bluetooth_pair)
-          actions.bluetooth_pair(mac);
-        if (actions.bluetooth_connect)
-          actions.bluetooth_connect(mac);
+          actions.bluetooth_pair(mac); // sigue en cola
+        if (actions.bluetooth_cancel_scan)
+          actions.bluetooth_cancel_scan(); // corta el discovery
+        s.toasts.push(s.ui_icons.bluetooth.get(), _("BLUETOOTH"),
+                      _("PAIRING... ") + name);
         s.show_bluetooth_scan = false;
         s.show_bluetooth = true;
       };
@@ -67,7 +69,9 @@ PanelSpec makeBluetoothScanPanelSpec(ShellState &st, Config &cfg,
   back_row.label = _("BACK");
   back_row.kind = RowKind::Footer;
   back_row.icon = RowIcon::Exit;
-  back_row.on_select = [](ShellState &s, Config &, const ShellActions &) {
+  back_row.on_select = [](ShellState &s, Config &, const ShellActions &a) {
+    if (a.bluetooth_cancel_scan)
+      a.bluetooth_cancel_scan();
     s.show_bluetooth_scan = false;
     s.show_bluetooth = true;
   };

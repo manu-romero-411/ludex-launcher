@@ -55,39 +55,40 @@ target_link_libraries(imgui PUBLIC
 )
 
 add_executable(ludex-launcher
-    src/util.cpp
-    src/main.cpp
-    src/application.cpp
-    src/ui/ui_common.cpp
-    src/ui/widgets/clock.cpp
-    src/ui/widgets/player_indicators.cpp
-    src/ui/widgets/help_hints.cpp
-    src/ui/widgets/edge_fades.cpp
-    src/ui/widgets/tile_carousel.cpp
-    src/ui/widgets/wallpaper.cpp
-    src/ui/panels/pan_mainmenu.cpp
-    src/ui/panels/panel_renderer.cpp
-    src/ui/panels/pan_settings.cpp
-    src/ui/panels/pan_shutdown.cpp
-    src/ui/panels/pan_controllers.cpp
-    src/ui/shell_orchestrator.cpp
-    src/ui/ui_input_handlers.cpp
-    src/ui/assets.cpp
-    src/ui/render/renderer_sdl.cpp
-    src/ui/render/texture_handle.cpp
-    src/ui/shell/shell_state.cpp
-    src/audio/audio_manager.cpp
-    src/input/input_manager.cpp
-    src/input/ir_input.cpp
-    src/core/app_backends.cpp
-    src/core/app_discovery.cpp
-    src/core/config.cpp
-    src/core/ini.cpp
-    src/core/launcher.cpp
-    src/core/bluetooth_manager.cpp
-    src/core/bluetooth_manager.cpp
-    src/ui/panels/pan_bluetooth.cpp
-    src/ui/panels/pan_bluetooth_scan.cpp
+src/util.cpp
+src/main.cpp
+src/application.cpp
+src/ui/ui_common.cpp
+src/ui/widgets/clock.cpp
+src/ui/widgets/player_indicators.cpp
+src/ui/widgets/help_hints.cpp
+src/ui/widgets/edge_fades.cpp
+src/ui/widgets/tile_carousel.cpp
+src/ui/widgets/wallpaper.cpp
+src/ui/widgets/toast.cpp
+src/ui/panels/panel_renderer.cpp
+src/ui/panels/pan_settings.cpp
+src/ui/panels/pan_shutdown.cpp
+src/ui/panels/pan_controllers.cpp
+src/ui/panels/pan_bluetooth.cpp
+src/ui/panels/pan_bluetooth_scan.cpp
+src/ui/panels/pan_mainmenu.cpp
+src/ui/panels/pan_pin.cpp
+src/ui/shell_orchestrator.cpp
+src/ui/ui_input_handlers.cpp
+src/ui/assets.cpp
+src/ui/render/renderer_sdl.cpp
+src/ui/render/texture_handle.cpp
+src/ui/shell/shell_state.cpp
+src/audio/audio_manager.cpp
+src/input/input_manager.cpp
+src/input/ir_input.cpp
+src/core/app_backends.cpp
+src/core/app_discovery.cpp
+src/core/config.cpp
+src/core/ini.cpp
+src/core/launcher.cpp
+src/core/bluetooth_manager.cpp
 )
 
 # ---------------------------------------------------------------------------

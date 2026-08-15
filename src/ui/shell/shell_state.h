@@ -6,6 +6,7 @@
 #include "../../core/app_discovery.h"
 #include "../../core/config.h"
 #include "../render/renderer.h"
+#include "ui/widgets/toast.h"
 
 struct WallpaperLayer {
   TexturePtr texture;
@@ -157,6 +158,11 @@ struct ShellState {
   int drawPanelId() const;  // qué panel debe dibujar el orchestrator
   float panelEased() const; // progreso 0..1 con easing
   void updatePanelAnimation(float dt);
+  bool show_pin = false;
+  std::string pin_mac, pin_name, pin_buffer;
+  int pin_focus = 0;
+  ui::ToastCenter toasts;
+  float pin_scroll = 0.0f;
 
 private:
   static constexpr float LERP_RATE = 10.0f;

@@ -8,8 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-enum class UiAction { Left, Right, Up, Down, Select, Back, Menu, Guide };
-
+enum class UiAction { Left, Right, Up, Down, Select, Back, Menu, Guide, Alt };
 struct UiInput {
   int player = -1;
   UiAction action = UiAction::Select;

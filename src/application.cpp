@@ -1,4 +1,6 @@
 #include "application.h"
+#include "core/bluetooth_manager.h"
+#include "core/i18n.h"
 #include "core/launcher.h"
 #include "ui/assets.h"
 #include "ui/ui_input_handlers.h"
@@ -120,46 +122,35 @@ void Application::setupActions() {
     shell_.bluetooth_focus = 0;
   };
   actions_.bluetooth_available = [this] { return bluetooth_.available(); };
-  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
-  actions_.bluetooth_connect = [this](const std::string &mac) {
-    bluetooth_.connect(mac);
+  actions_.bluetooth_scan = [this] { bluetooth_.requestScan(12); };
+  actions_.bluetooth_connect = [this](const std::string &m) {
+    bluetooth_.requestConnect(m);
   };
-  actions_.bluetooth_disconnect = [this](const std::string &mac) {
-    bluetooth_.disconnect(mac);
+  actions_.bluetooth_disconnect = [this](const std::string &m) {
+    bluetooth_.requestDisconnect(m);
   };
-  actions_.bluetooth_remove = [this](const std::string &mac) {
-    bluetooth_.removeDevice(mac);
+  actions_.bluetooth_remove = [this](const std::string &m) {
+    bluetooth_.requestRemove(m);
+  };
+  actions_.bluetooth_pair = [this](const std::string &m) {
+    bluetooth_.requestPair(m);
   };
   actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
-  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
-  actions_.bluetooth_scan_remaining = [this] {
-    return bluetooth_.scanRemainingSec();
-  };
   actions_.bluetooth_discovered = [this] {
     return bluetooth_.discoveredDevices();
   };
-  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
-  actions_.bluetooth_pair = [this](const std::string &mac) {
-    bluetooth_.pair(mac);
-  };
-  actions_.bluetooth_connect = [this](const std::string &mac) {
-    bluetooth_.connect(mac);
-    bt_rescan_pending_ = true;
-    bt_rescan_time_ = SDL_GetPerformanceCounter();
-  };
-  actions_.bluetooth_disconnect = [this](const std::string &mac) {
-    bluetooth_.disconnect(mac);
-    bt_rescan_pending_ = true;
-    bt_rescan_time_ = SDL_GetPerformanceCounter();
-  };
-  actions_.bluetooth_remove = [this](const std::string &mac) {
-    bluetooth_.removeDevice(mac);
-  };
-  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
   actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
   actions_.bluetooth_scan_remaining = [this] {
     return bluetooth_.scanRemainingSec();
   };
+  actions_.bluetooth_submit_pin = [this](const std::string &m,
+                                         const std::string &p) {
+    shell_.toasts.push(shell_.ui_icons.bluetooth.get(), _("BLUETOOTH"),
+                       _("PAIRING..."));
+    bluetooth_.submitPin(m, p);
+  };
+  actions_.bluetooth_cancel_pin = [this] { bluetooth_.cancelPin(); };
+  actions_.bluetooth_cancel_scan = [this] { bluetooth_.requestCancelScan(); };
 }
 
 bool Application::init() {
@@ -224,7 +215,7 @@ bool Application::init() {
   backends_.loadAll();
 
   if (bluetooth_.available()) {
-    bluetooth_.refresh();
+    bluetooth_.requestRefresh();
     SDL_Log("[ludex] Bluetooth available");
   } else {
     SDL_Log("[ludex] Bluetooth not available");
@@ -266,8 +257,6 @@ bool Application::init() {
   return true;
 }
 
-
-
 int Application::run() {
   while (running_) {
     Uint64 now_time = SDL_GetPerformanceCounter();
@@ -276,6 +265,7 @@ int Application::run() {
     last_time_ = now_time;
 
     updateAppFade(dt);
+    shell_.toasts.update(dt); // NUEVO: envejecer toasts
     processEvents(dt);
 
     if (!app_running_ && !app_fade_active_) {
@@ -295,8 +285,13 @@ int Application::run() {
     }
 
     audio_.update();
-    bluetooth_.setAutoRefresh(shell_.show_bluetooth); // <-- NUEVO
-    bluetooth_.update();
+    bluetooth_.setAutoRefresh(shell_.show_bluetooth);
+    {
+      BtEvent ev;
+      while (bluetooth_.pollEvent(ev))
+        handleBtEvent(ev);
+    }
+
     // Rescan diferido tras conectar/desconectar BT
     if (bt_rescan_pending_) {
       Uint64 now = SDL_GetPerformanceCounter();
@@ -308,6 +303,7 @@ int Application::run() {
         SDL_Log("[ludex] InputManager rescan tras BT connect/disconnect");
       }
     }
+
     if (want_quit_)
       running_ = false;
 
@@ -317,6 +313,7 @@ int Application::run() {
       pending_fade_launch_ = idx;
       startAppFade(true);
     }
+
     if (!app_running_ && pending_fade_launch_ >= 0 && app_fade_in_ &&
         app_fade_progress_ >= 1.0f) {
       int idx = pending_fade_launch_;
@@ -326,6 +323,7 @@ int Application::run() {
         last_time_ = SDL_GetPerformanceCounter();
       }
     }
+
     shell_.updatePanelAnimation(dt);
     renderer_->beginFrame();
     renderer_->drawShell(shell_, cfg_, actions_);
@@ -353,13 +351,12 @@ void Application::processEvents(float dt) {
   while (SDL_PollEvent(&event)) {
     // Bloquear completamente cuando una app está corriendo o hay fade activo
     if (app_running_ || app_fade_active_) {
-      // Solo procesar eventos de ventana (cerrar, etc)
       if (event.type == SDL_QUIT ||
           (event.type == SDL_WINDOWEVENT &&
            event.window.event == SDL_WINDOWEVENT_CLOSE)) {
         running_ = false;
       }
-      continue; // <-- AÑADIR: ignorar todos los demás eventos
+      continue;
     }
 
     if (event.type == SDL_QUIT ||
@@ -388,7 +385,6 @@ void Application::processEvents(float dt) {
 
     handleMouseDrag(event);
     handleTouchDrag(event);
-
     input_.handleEvent(event);
   }
 }
@@ -434,12 +430,8 @@ void Application::handleKeyboard(const SDL_Event &e) {
       }
     }
     break;
-  case SDLK_b: // debug temporal
-    bluetooth_.refresh();
-    for (const auto &d : bluetooth_.devices()) {
-      SDL_Log("[BT] %s | %s | paired=%d connected=%d", d.mac.c_str(),
-              d.name.c_str(), d.paired, d.connected);
-    }
+  case SDLK_x:
+    handleAction(UiAction::Alt);
     break;
   case SDLK_w:
     shell_.nextWallpaper();
@@ -659,7 +651,6 @@ void Application::updateAppFade(float dt) {
     app_fade_progress_ += speed * dt;
     if (app_fade_progress_ >= 1.0f) {
       app_fade_progress_ = 1.0f;
-      // No detener aquí, esperar a que la app se cierre
     }
   } else {
     app_fade_progress_ -= speed * dt;
@@ -674,8 +665,65 @@ void Application::renderAppFade() {
   if (!app_fade_active_ && app_fade_progress_ <= 0.0f)
     return;
   ImGuiIO &io = ImGui::GetIO();
-  ImDrawList *dl = ImGui::GetForegroundDrawList(); // <-- CLAVE
+  ImDrawList *dl = ImGui::GetForegroundDrawList();
   int alpha = (int)(255.0f * app_fade_progress_);
   dl->AddRectFilled(ImVec2(0, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y),
                     IM_COL32(0, 0, 0, alpha));
+}
+
+void Application::handleBtEvent(const BtEvent &ev) {
+  void *ic = shell_.ui_icons.bluetooth.get();
+  auto &T = shell_.toasts;
+  const std::string name = ev.name.empty() ? ev.mac : ev.name;
+  switch (ev.type) {
+  case BtEventType::ScanStarted:
+    T.push(ic, _("BLUETOOTH"), _("SCANNING..."));
+    break;
+  case BtEventType::ScanFinished:
+    T.push(ic, _("BLUETOOTH"), _("SCAN FINISHED"));
+    break;
+  case BtEventType::ConnectOk:
+    T.push(ic, _("BLUETOOTH"), _("CONNECTED: ") + name);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+    break;
+  case BtEventType::ConnectFailed:
+    T.push(ic, _("BLUETOOTH"), _("CONNECTION FAILED: ") + name, 5.0f);
+    break;
+  case BtEventType::ConnectNeedsPin:
+  case BtEventType::PairNeedsPin:
+    T.push(ic, _("BLUETOOTH"), _("PIN REQUIRED: ") + name);
+    shell_.show_pin = true;
+    shell_.pin_mac = ev.mac;
+    shell_.pin_name = name;
+    shell_.pin_buffer.clear();
+    shell_.pin_focus = 1; // primera tecla numérica
+    shell_.pin_scroll = 0.0f;
+    break;
+  case BtEventType::PairOk:
+    T.push(ic, _("BLUETOOTH"), _("PAIRED: ") + name);
+    break;
+  case BtEventType::PairFailed:
+    if (ev.detail != "cancelled")
+      T.push(ic, _("BLUETOOTH"), _("PAIRING FAILED: ") + name, 5.0f);
+    break;
+  case BtEventType::DisconnectOk:
+    T.push(ic, _("BLUETOOTH"), _("DISCONNECTED: ") + name);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+    break;
+  case BtEventType::DisconnectFailed:
+    T.push(ic, _("BLUETOOTH"), _("DISCONNECT FAILED: ") + name, 5.0f);
+    break;
+  case BtEventType::RemoveOk:
+    T.push(ic, _("BLUETOOTH"), _("UNLINKED: ") + name);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+    break;
+  case BtEventType::RemoveFailed:
+    T.push(ic, _("BLUETOOTH"), _("UNLINK FAILED: ") + name, 5.0f);
+    break;
+  case BtEventType::DevicesChanged:
+    break;
+  }
 }

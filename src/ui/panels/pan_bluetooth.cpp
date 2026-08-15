@@ -26,9 +26,10 @@ PanelSpec makeBluetoothPanelSpec(ShellState &st, Config &cfg,
   spec.scroll_ptr = &st.bluetooth_scroll;
   spec.on_back = [](ShellState &s, Config &) {
     s.show_bluetooth = false;
-    s.show_system = true; // <-- AÑADIR
-    s.system_focus = 0;   // <-- AÑADIR
+    s.show_system = true;
+    s.system_focus = 0;
   };
+
   // --- Fila de escaneo, con icono bluetooth ---
   {
     RowDefinition row;
@@ -50,22 +51,28 @@ PanelSpec makeBluetoothPanelSpec(ShellState &st, Config &cfg,
     for (const auto &dev : actions.bluetooth_devices()) {
       RowDefinition row;
       row.kind = RowKind::Activator;
-      row.label = dev.name; // sin [CONNECTED]
+      row.label = dev.name;
       row.icon = iconForKind(dev.kind);
       row.icon_col = dev.connected ? COL_CONNECTED : COL_DISCONNECTED;
+
       if (dev.connected) {
-        row.on_select = [&actions, mac = dev.mac](ShellState &, Config &,
-                                                  const ShellActions &) {
+        row.on_select = [&actions, mac = dev.mac, name = dev.name](
+                            ShellState &s, Config &, const ShellActions &) {
           if (actions.bluetooth_disconnect)
             actions.bluetooth_disconnect(mac);
+          s.toasts.push(s.ui_icons.bluetooth.get(), _("BLUETOOTH"),
+                        _("DISCONNECTING... ") + name);
         };
       } else {
-        row.on_select = [&actions, mac = dev.mac](ShellState &, Config &,
-                                                  const ShellActions &) {
+        row.on_select = [&actions, mac = dev.mac, name = dev.name](
+                            ShellState &s, Config &, const ShellActions &) {
           if (actions.bluetooth_connect)
             actions.bluetooth_connect(mac);
+          s.toasts.push(s.ui_icons.bluetooth.get(), _("BLUETOOTH"),
+                        _("CONNECTING... ") + name);
         };
       }
+      row.tag = dev.mac; // permite desvincular con X
       spec.rows.push_back(row);
     }
   }
@@ -78,8 +85,8 @@ PanelSpec makeBluetoothPanelSpec(ShellState &st, Config &cfg,
     back_row.icon = RowIcon::Exit;
     back_row.on_select = [](ShellState &s, Config &, const ShellActions &) {
       s.show_bluetooth = false;
-      s.show_system = true; // <-- AÑADIR
-      s.system_focus = 0;   // <-- AÑADIR
+      s.show_system = true;
+      s.system_focus = 0;
     };
     spec.rows.push_back(back_row);
   }

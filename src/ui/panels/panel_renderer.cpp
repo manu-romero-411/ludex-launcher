@@ -105,7 +105,7 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
   int list_count = total - footer_count;
 
   int &focus = *spec.focus_ptr;
-  focus = std::clamp(focus, 0, total - 1);
+  const bool accept_mouse = !st.show_pin || spec.pin_panel;
 
   Layout L = computeLayout(list_count, cfg);
 
@@ -114,7 +114,8 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
   bool animating = st.panel_anim != ShellState::PanelAnim::Idle;
   float eased = animating ? st.panelEased() : 1.0f;
 
-  // Recorrido completo: desde el reposo hasta quedar totalmente bajo la pantalla
+  // Recorrido completo: desde el reposo hasta quedar totalmente bajo la
+  // pantalla
   float hide_dist = vpa->WorkSize.y - L.py;
   float anim_offset = (1.0f - eased) * hide_dist;
 
@@ -167,6 +168,7 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
   }
 
   // ---- filas (scrollables, recortadas) ----
+  // ---- filas (scrollables, recortadas) ----
   int first = (int)std::floor(scroll);
   int last = std::min(list_count - 1, first + L.visible_rows);
 
@@ -177,20 +179,24 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     ImVec2 rmin(L.content_min.x, y0);
     ImVec2 rmax(L.content_max.x, y0 + L.row_h);
 
-    ImGui::PushID(PANEL_ID_BASE + i);
+    ImGui::PushID(PANEL_ID_BASE + i); // <-- CORREGIDO
     ImGui::SetCursorScreenPos(rmin);
-    ImGui::InvisibleButton("##row", ImVec2(rmax.x - rmin.x, rmax.y - rmin.y));
-    bool hovered = ImGui::IsItemHovered();
-    bool active = ImGui::IsItemActive();
-    if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-      focus = i;
-      if (row.on_select)
-        row.on_select(st, cfg, actions);
-      else if (row.adjust)
-        row.adjust(cfg, +1);
+    ImGui::InvisibleButton("##row", ImVec2(rmax.x - rmin.x, rmax.y - rmin.y)); // <-- CORREGIDO
+
+    bool hovered = false, active = false;
+    if (accept_mouse) {
+      hovered = ImGui::IsItemHovered();
+      active = ImGui::IsItemActive();
+      if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        focus = i;
+        if (row.on_select)
+          row.on_select(st, cfg, actions);
+        else if (row.adjust)
+          row.adjust(cfg, +1);
+      }
     }
     ImGui::PopID();
-
+    
     if (active)
       dl->AddRectFilled(rmin, rmax, L.row_pressed);
     else if (i == focus)
@@ -266,14 +272,19 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     ImGui::PushID(FOOTER_ID_BASE + i);
     ImGui::SetCursorScreenPos(bmin);
     ImGui::InvisibleButton("##foot", ImVec2(bmax.x - bmin.x, bmax.y - bmin.y));
-    bool hovered = ImGui::IsItemHovered();
-    bool active = ImGui::IsItemActive();
-    if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-      focus = i;
-      if (row.on_select)
-        row.on_select(st, cfg, actions);
+    
+    bool hovered = false, active = false;
+    if (accept_mouse) {
+      // <-- CORREGIDO: Se eliminó el PushID e InvisibleButton duplicados que rompían el clic
+      hovered = ImGui::IsItemHovered();
+      active = ImGui::IsItemActive();
+      if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        focus = i;
+        if (row.on_select)
+          row.on_select(st, cfg, actions);
+      }
     }
-    ImGui::PopID();
+    ImGui::PopID(); // <-- Ahora cierra correctamente el PushID del principio
 
     float bh = bmax.y - bmin.y;
     if (active)
@@ -283,7 +294,7 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     else if (hovered)
       dl->AddRectFilled(bmin, bmax, L.row_hover, 6.0f);
     dl->AddRect(bmin, bmax, L.border_col, 6.0f, 0, 2.0f);
-
+    
     void *ricon = st.ui_icons.byIndex(row.icon);
     ImVec2 lt = ImGui::CalcTextSize(row.label.c_str());
     float isz = bh * 0.5f;
