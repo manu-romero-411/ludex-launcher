@@ -6,6 +6,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 enum class BtDeviceKind { Unknown, Gamepad, Audio };
@@ -17,11 +18,18 @@ struct BluetoothDevice {
 };
 
 enum class BtEventType {
-  ScanStarted, ScanFinished,
-  ConnectOk, ConnectFailed, ConnectNeedsPin,
-  DisconnectOk, DisconnectFailed,
-  PairOk, PairFailed, PairNeedsPin,
-  RemoveOk, RemoveFailed,
+  ScanStarted,
+  ScanFinished,
+  ConnectOk,
+  ConnectFailed,
+  ConnectNeedsPin,
+  DisconnectOk,
+  DisconnectFailed,
+  PairOk,
+  PairFailed,
+  PairNeedsPin,
+  RemoveOk,
+  RemoveFailed,
   DevicesChanged
 };
 
@@ -62,7 +70,10 @@ public:
   void setAutoRefresh(bool on);
 
 private:
-  struct Request { std::string op, mac, pin; int arg = 0; };
+  struct Request {
+    std::string op, mac, pin;
+    int arg = 0;
+  };
 
   void workerLoop();
   void execRequest(const Request &r);
@@ -95,6 +106,8 @@ private:
   mutable std::mutex state_mtx_;
   std::vector<BluetoothDevice> devices_;
   std::vector<BluetoothDevice> discovered_;
+  mutable int available_cached_ = -1; // -1 = desconocido, 0 = no, 1 = sí
+  std::unordered_map<std::string, BtDeviceKind> kind_cache_;
   bool scanning_ = false;
   std::chrono::steady_clock::time_point scan_start_;
   int scan_timeout_sec_ = 0;

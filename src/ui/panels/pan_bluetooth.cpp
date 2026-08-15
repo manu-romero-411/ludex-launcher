@@ -1,6 +1,6 @@
 #include "pan_bluetooth.h"
-#include "../../core/bluetooth_manager.h"
-#include "../../core/i18n.h"
+#include "core/bluetooth_manager.h"
+#include "core/i18n.h"
 
 namespace ui::panels {
 namespace {

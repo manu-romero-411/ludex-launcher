@@ -114,7 +114,8 @@ void AudioManager::playRandomTrack() {
   int attempts = 0;
   int new_track;
   do {
-    new_track = std::rand() % music_files_.size();
+    new_track = std::uniform_int_distribution<int>(0, (int)music_files_.size() -
+                                                          1)(rng_);
     attempts++;
   } while (new_track == current_track_ && music_files_.size() > 1 &&
            attempts < 10);

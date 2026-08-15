@@ -1,5 +1,4 @@
 #include "application.h"
-#include "core/bluetooth_manager.h"
 #include "core/i18n.h"
 #include "core/launcher.h"
 #include "ui/assets.h"
@@ -232,7 +231,7 @@ bool Application::init() {
 
   shell_.refresh(cfg_, backends_);
 
-  renderer_ = createVulkanRenderer();
+  renderer_ = createSdlRenderer();
   if (!renderer_->init(window_, cfg_)) {
     std::cerr << "No se pudo inicializar el renderer" << std::endl;
     input_.shutdown();

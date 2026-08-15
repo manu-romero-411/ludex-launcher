@@ -106,7 +106,7 @@ static void applyTint(SDL_Surface *surf, const TileColor &tint) {
   }
 }
 
-class VulkanRenderer final : public Renderer {
+class SdlRenderer final : public Renderer {
 public:
   bool init(SDL_Window *window, const Config &cfg) override {
     window_ = window;
@@ -154,12 +154,12 @@ public:
     ImGui::NewFrame();
   }
 
-  void drawShell(ShellState &state, // <-- quitado const
-                 const Config &cfg, const ShellActions &actions) override {
-    if (!ready_)
-      return;
-    drawShellImGui(state, cfg, actions);
-  }
+    void drawShell(ShellState &state, Config &cfg,
+                   const ShellActions &actions) override {
+        if (!ready_)
+            return;
+        drawShellImGui(state, cfg, actions);
+    }
 
   void endFrame() override {
     if (!ready_)
@@ -323,6 +323,6 @@ private:
   bool ready_ = false;
 };
 
-std::unique_ptr<Renderer> createVulkanRenderer() {
-  return std::make_unique<VulkanRenderer>();
+std::unique_ptr<Renderer> createSdlRenderer() {
+  return std::make_unique<SdlRenderer>();
 }

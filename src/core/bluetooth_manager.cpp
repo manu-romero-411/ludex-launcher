@@ -107,7 +107,10 @@ void BluetoothManager::shutdown() {
 }
 
 bool BluetoothManager::available() const {
-  return !runCmd("which bluetoothctl 2>/dev/null").empty();
+  if (available_cached_ < 0)
+    available_cached_ =
+        runCmd("which bluetoothctl 2>/dev/null").empty() ? 0 : 1;
+  return available_cached_ == 1;
 }
 
 void BluetoothManager::enqueue(Request r) {
@@ -254,7 +257,7 @@ void BluetoothManager::workerLoop() {
     scanTick(last_scan_poll);
     if (auto_refresh_) {
       auto now = std::chrono::steady_clock::now();
-      if (std::chrono::duration<double>(now - last_auto).count() >= 2.0) {
+      if (std::chrono::duration<double>(now - last_auto).count() >= 5.0) {
         last_auto = now;
         refreshCache();
       }
@@ -268,11 +271,28 @@ void BluetoothManager::refreshCache() {
     out = runCmd("bluetoothctl paired-devices 2>/dev/null");
   std::vector<BluetoothDevice> devs;
   parseDevicesOutput(out, devs);
+
   for (auto &d : devs) {
+    // El estado de conexión solo lo da `info`; no se puede evitar.
     std::string i = runCmd("bluetoothctl info " + d.mac + " 2>/dev/null");
     d.connected = contains(i, "Connected: yes");
-    d.kind = classifyFromInfo(i, d.name);
+
+    // Clasificación: primero por nombre (gratis), luego caché, luego info.
+    BtDeviceKind by_name = classifyByName(d.name);
+    if (by_name != BtDeviceKind::Unknown) {
+      d.kind = by_name;
+      kind_cache_[d.mac] = by_name;
+    } else {
+      auto it = kind_cache_.find(d.mac);
+      if (it != kind_cache_.end()) {
+        d.kind = it->second;
+      } else {
+        d.kind = classifyFromInfo(i, d.name);
+        kind_cache_[d.mac] = d.kind;
+      }
+    }
   }
+
   {
     std::lock_guard<std::mutex> l(state_mtx_);
     devices_ = std::move(devs);
@@ -604,7 +624,7 @@ void BluetoothManager::requestCancelScan() {
       was_scanning = true;
     }
   }
-  
+
   if (was_scanning) {
     // Avisamos a la UI para que oculte el texto de "SCANNING..."
     pushEvent({BtEventType::ScanFinished, "", "", "cancelled"});

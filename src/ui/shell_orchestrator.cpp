@@ -22,7 +22,7 @@ ui::widgets::PlayerIndicators g_player_indicators;
 ui::widgets::TileCarousel g_tile_carousel;
 } // namespace
 
-void drawShellImGui(ShellState &state, const Config &cfg,
+void drawShellImGui(ShellState &state, Config &cfg,
                     const ShellActions &actions) {
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
@@ -39,52 +39,50 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   ImGui::Begin("##ludex", nullptr, flags);
   ImDrawList *dl = ImGui::GetWindowDrawList();
 
-      // --- Wallpaper ---
-    if (state.wallpapers.hasWallpaper()) {
-        state.wallpapers.draw(dl, W, H, cfg);
-    } else {
-        bool light = isLight(cfg.theme);
-        dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
-                          light ? IM_COL32(245, 245, 245, 255)
-                                : IM_COL32(18, 18, 20, 255));
-    }
+  // --- Wallpaper ---
+  if (state.wallpapers.hasWallpaper()) {
+    state.wallpapers.draw(dl, W, H, cfg);
+  } else {
+    bool light = isLight(cfg.theme);
+    dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
+                      light ? IM_COL32(245, 245, 245, 255)
+                            : IM_COL32(18, 18, 20, 255));
+  }
 
   // --- Componentes principales ---
   g_edge_fades.draw(cfg, W, H);
   g_tile_carousel.draw(state, cfg, actions, W, H, panel_open);
 
   // --- Paneles (usando el renderer genérico) ---
-  Config &mutable_cfg = const_cast<Config &>(cfg);
   switch (state.drawPanelId()) {
   case 1: {
-    auto s = ui::panels::makeSettingsPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    auto s = ui::panels::makeSettingsPanelSpec(state, cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   case 2: {
     auto s = ui::panels::makeShutdownPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   case 3: {
-    auto s = ui::panels::makeControllersPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    auto s = ui::panels::makeControllersPanelSpec(state, cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   case 4: {
-    auto s = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    auto s = ui::panels::makeBluetoothPanelSpec(state, cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   case 5: {
-    auto s =
-        ui::panels::makeBluetoothScanPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    auto s = ui::panels::makeBluetoothScanPanelSpec(state, cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   case 6: {
     auto s = ui::panels::makeSystemPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(s, state, cfg, actions);
     break;
   }
   default:
@@ -94,7 +92,7 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   // Modal PIN por encima de cualquier panel
   if (state.show_pin) {
     auto spec = ui::panels::makePinPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(spec, state, cfg, actions);
   }
   // --- Widgets de HUD ---
   bool horizontal = isHorizontal(cfg.side);

@@ -1,9 +1,7 @@
-
 #pragma once
-
 #include <atomic>
 #include <filesystem>
-#include <string>
+#include <random>
 #include <vector>
 
 struct Mix_Music;
@@ -34,8 +32,9 @@ private:
   Mix_Chunk *scroll_sound_ = nullptr;
   Mix_Chunk *select_sound_ = nullptr;
 
-  void playRandomTrack();
-  static void musicFinishedCallback();
-  static AudioManager *instance_;
-  std::atomic<bool> music_finished_{false};
+    void playRandomTrack();
+    static void musicFinishedCallback();
+    static AudioManager *instance_;
+    std::atomic<bool> music_finished_{false};
+    std::mt19937 rng_{std::random_device{}()};
 };

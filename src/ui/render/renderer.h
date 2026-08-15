@@ -22,8 +22,8 @@ public:
     virtual void beginFrame() = 0;
 
     virtual void drawShell(
-        ShellState& state,             // <-- sin const
-        const Config& cfg,
+        ShellState& state,
+        Config& cfg,
         const ShellActions& actions
     ) = 0;
 
@@ -45,4 +45,4 @@ public:
     virtual void presentBlackFrame() = 0;
 };
 
-std::unique_ptr<Renderer> createVulkanRenderer();
+std::unique_ptr<Renderer> createSdlRenderer();
