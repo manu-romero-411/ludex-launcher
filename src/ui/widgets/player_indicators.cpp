@@ -1,5 +1,4 @@
 #include "player_indicators.h"
-#include "../ui_common.h"
 #include <algorithm>
 
 namespace ui::widgets {

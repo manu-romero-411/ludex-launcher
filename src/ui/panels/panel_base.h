@@ -1,6 +1,5 @@
 #pragma once
 #include <imgui.h>
-#include <vector>
 #include "config.h"
 #include "shell_state.h"
 

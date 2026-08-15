@@ -7,7 +7,6 @@
 #include "ir_input.h"
 #include "renderer.h"
 #include "shell_state.h"
-#include "shell_ui.h"
 #include <SDL.h>
 #include <memory>
 #include <filesystem>

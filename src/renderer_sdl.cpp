@@ -1,5 +1,7 @@
 
 #include "renderer.h"
+#include "ui/ui_common.h" 
+#include "ui/shell_orchestrator.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <SDL.h>
 #include <SDL_image.h>
@@ -19,7 +21,6 @@
 #include "app_discovery.h" // para TileColor
 #include "config.h"
 #include "shell_state.h"
-#include "shell_ui.h"
 #ifdef LUDEX_HAVE_RSVG
 #include <cairo.h>
 #include <librsvg/rsvg.h>
@@ -129,7 +130,7 @@ public:
     ImGuiIO &io = ImGui::GetIO();
     ImGui::StyleColorsDark();
 
-    loadShellFonts(cfg, (float)h);
+    ui::loadShellFonts(cfg, (float)h);
 
     // Verificar que el atlas se construyó
     unsigned char *pixels;

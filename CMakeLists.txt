@@ -55,28 +55,35 @@ target_link_libraries(imgui PUBLIC
 )
 
 add_executable(ludex-launcher
-    src/main.cpp
-    src/config.cpp
-    src/app_discovery.cpp
-    src/launcher.cpp
-    src/input_manager.cpp
     src/ir_input.cpp
-    src/shell_state.cpp
-    src/shell_ui.cpp
-    src/renderer_sdl.cpp
     src/assets.cpp
     src/ini.cpp
     src/backends.cpp
     src/util.cpp
+    src/app_discovery.cpp
     src/audio_manager.cpp
+    src/config.cpp
+    src/input_manager.cpp
+    src/launcher.cpp
+    src/main.cpp
+    src/shell_state.cpp
+    src/renderer_sdl.cpp
     src/application.cpp
     src/ui/ui_common.cpp
-    src/ui/components.cpp
-    src/ui/system_menu.cpp
-    src/ui/panels.cpp
-    src/ui/tile_carousel.cpp
-    src/ui/wallpaper.cpp
-
+    src/ui/widgets/clock.cpp
+    src/ui/widgets/player_indicators.cpp
+    src/ui/widgets/help_hints.cpp
+    src/ui/widgets/edge_fades.cpp
+    src/ui/widgets/tile_carousel.cpp
+    src/ui/widgets/wallpaper.cpp
+    src/ui/widgets/system_menu.cpp
+    src/ui/panels/panel_base.cpp
+    src/ui/panels/panel_renderer.cpp
+    src/ui/panels/pan_settings.cpp
+    src/ui/panels/pan_shutdown.cpp
+    src/ui/panels/pan_controllers.cpp
+    src/ui/shell_orchestrator.cpp
+    src/ui/ui_input_handlers.cpp
 )
 
 target_include_directories(ludex-launcher PRIVATE
@@ -157,9 +164,9 @@ if(GLSLANG_VALIDATOR)
     add_custom_command(
         OUTPUT ${SHADER_OUT}/imgui.vert.spv
         COMMAND ${GLSLANG_VALIDATOR}
-                -V
-                ${VERT_SRC}
-                -o ${SHADER_OUT}/imgui.vert.spv
+        -V
+        ${VERT_SRC}
+        -o ${SHADER_OUT}/imgui.vert.spv
         DEPENDS ${VERT_SRC}
         COMMENT "Compiling ImGui vertex shader"
         VERBATIM
@@ -168,9 +175,9 @@ if(GLSLANG_VALIDATOR)
     add_custom_command(
         OUTPUT ${SHADER_OUT}/imgui.frag.spv
         COMMAND ${GLSLANG_VALIDATOR}
-                -V
-                ${FRAG_SRC}
-                -o ${SHADER_OUT}/imgui.frag.spv
+        -V
+        ${FRAG_SRC}
+        -o ${SHADER_OUT}/imgui.frag.spv
         DEPENDS ${FRAG_SRC}
         COMMENT "Compiling ImGui fragment shader"
         VERBATIM

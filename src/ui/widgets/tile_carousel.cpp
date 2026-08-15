@@ -1,10 +1,10 @@
 #include "tile_carousel.h"
 #include "imgui_internal.h"
-#include "ui_common.h"
+#include "../ui_common.h"
 #include <algorithm>
 #include <cmath>
 
-namespace ui {
+namespace ui::widgets {
 
 void TileCarousel::draw(ShellState& state, const Config& cfg, const ShellActions& actions,
                         float W, float H, bool panel_open) {
@@ -119,7 +119,7 @@ void TileCarousel::draw(ShellState& state, const Config& cfg, const ShellActions
 
         std::string label = upper(app.name);
         if (!g_font_tile) ImGui::PushFont(ImGui::GetDefaultFont());
-        else ImGui::PushFont(g_font_tile);
+        else ImGui::PushFont(ui::g_font_tile);
 
         float fs_sel = H * cfg.font_tile_pct;
         float fs = flerp(fs_sel * 0.78f, fs_sel, t);

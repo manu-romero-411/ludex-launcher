@@ -2,7 +2,7 @@
 #pragma once
 
 #include <filesystem>
-#include <functional>
+#include "shell_actions.h"
 #include <memory>
 
 struct SDL_Window;
@@ -10,7 +10,7 @@ struct SDL_Window;
 struct App;
 struct Config;
 struct ShellState;
-struct ShellActions;
+// por:
 struct TileColor;
 
 class Renderer {

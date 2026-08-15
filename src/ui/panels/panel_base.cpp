@@ -66,7 +66,7 @@ PanelLayout PanelBase::beginPanel(const char* title, int list_count, int footer_
     dl->AddRectFilled(L.panel_min, ImVec2(L.panel_max.x, L.py + L.title_h),
                       L.panel_title, 10.0f, ImDrawFlags_RoundCornersTop);
 
-    ImGui::PushFont(g_font_tile);
+    ImGui::PushFont(ui::g_font_tile);
     ImVec2 tt = ImGui::CalcTextSize(title);
     dl->AddText(ImVec2(L.px + (L.pw - tt.x) * 0.5f, L.py + (L.title_h - tt.y) * 0.5f),
                 L.text_main, title);
@@ -87,7 +87,7 @@ void PanelBase::drawRow(int id, const RowData& row, const PanelLayout& L,
         dl->AddRectFilled(rmin, rmax, L.row_hover);
     }
 
-    ImGui::PushFont(g_font_tile);
+    ImGui::PushFont(ui::g_font_tile);
     ImVec2 tt = ImGui::CalcTextSize("X");
 
     void* ricon = nullptr; // Se obtendría de ui_icons si se pasa como parámetro
@@ -131,7 +131,7 @@ void PanelBase::drawFooterButton(int id, const char* label, const PanelLayout& L
     }
     dl->AddRect(bmin, bmax, L.border_col, 6.0f, 0, 2.0f);
 
-    ImGui::PushFont(g_font_tile);
+    ImGui::PushFont(ui::g_font_tile);
     ImVec2 bs = ImGui::CalcTextSize(label);
     dl->AddText(ImVec2(bmin.x + (bw - bs.x) * 0.5f, bmin.y + (bh - bs.y) * 0.5f),
                 L.text_main, label);

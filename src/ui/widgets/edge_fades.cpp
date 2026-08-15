@@ -1,5 +1,4 @@
 #include "edge_fades.h"
-#include "../ui_common.h"
 #include <algorithm>
 
 namespace ui::widgets {

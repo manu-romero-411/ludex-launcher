@@ -13,10 +13,10 @@ void Clock::draw(const Config& cfg, const ImGuiViewport* vp, bool left_side, boo
 
     float margin = vp->WorkSize.x * 0.018f;
 
-    ImGui::PushFont(g_font_clock);
+    ImGui::PushFont(ui::g_font_clock);
     ImVec2 ts = ImGui::CalcTextSize(time_text);
     ImGui::PopFont();
-    ImGui::PushFont(g_font_date);
+    ImGui::PushFont(ui::g_font_date);
     ImVec2 ds = ImGui::CalcTextSize(date_text);
     ImGui::PopFont();
 
@@ -32,12 +32,12 @@ void Clock::draw(const Config& cfg, const ImGuiViewport* vp, bool left_side, boo
         y_date = margin + ts.y + 6.0f;
     }
 
-    ImGui::PushFont(g_font_clock);
+    ImGui::PushFont(ui::g_font_clock);
     ImGui::SetCursorScreenPos(ImVec2(x_time, y_time));
     ImGui::TextUnformatted(time_text);
     ImGui::PopFont();
 
-    ImGui::PushFont(g_font_date);
+    ImGui::PushFont(ui::g_font_date);
     ImGui::SetCursorScreenPos(ImVec2(x_date, y_date));
     ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.88f, 0.9f), "%s", date_text);
     ImGui::PopFont();

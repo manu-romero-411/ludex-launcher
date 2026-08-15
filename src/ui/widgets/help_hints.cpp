@@ -37,7 +37,7 @@ void HelpHints::draw(const ShellState& state, const Config& cfg, const ImGuiView
                 {ic.home, "HOME", "SYSTEM MENU"}};
     }
 
-    ImGui::PushFont(g_font_hint);
+    ImGui::PushFont(ui::g_font_hint);
     float gap_seg = W * 0.014f;
     float gap_it = W * 0.004f;
 

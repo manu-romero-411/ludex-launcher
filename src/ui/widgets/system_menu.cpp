@@ -1,11 +1,12 @@
 #include "system_menu.h"
-#include "ui_common.h"
+#include "../ui_common.h"
+#include <imgui.h>
 
-namespace Ids {
+namespace ui::widgets {
+
+namespace {
 constexpr int SYSTEM_MENU_BASE = 500;
 }
-
-namespace ui {
 
 void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& actions,
                       float W, float H) {
@@ -16,8 +17,8 @@ void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& 
     bool light = (cfg.theme == "light");
 
     ImU32 row_normal = light ? IM_COL32(230, 232, 240, 255) : IM_COL32(32, 32, 36, 255);
-    ImU32 row_focus = light ? IM_COL32(200, 210, 230, 255) : IM_COL32(74, 74, 80, 255);
-    ImU32 text_col = light ? IM_COL32(25, 25, 30, 255) : IM_COL32(230, 230, 230, 255);
+    ImU32 row_focus  = light ? IM_COL32(200, 210, 230, 255) : IM_COL32(74, 74, 80, 255);
+    ImU32 text_col   = light ? IM_COL32(25, 25, 30, 255)    : IM_COL32(230, 230, 230, 255);
 
     float menu_h = H * cfg.menu_h_pct;
     float menu_w = W * cfg.tile_sel_w_pct;
@@ -34,11 +35,11 @@ void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& 
         ImVec2 max(min.x + menu_w, y0 + menu_h);
 
         if (state.menu_open) {
-            ImGui::PushID(Ids::SYSTEM_MENU_BASE + m);
+            ImGui::PushID(SYSTEM_MENU_BASE + m);
             ImGui::SetCursorScreenPos(min);
             ImGui::InvisibleButton("##sys", ImVec2(menu_w, menu_h));
             bool hovered = ImGui::IsItemHovered();
-            bool active = ImGui::IsItemActive();
+            bool active  = ImGui::IsItemActive();
 
             if (ImGui::IsItemClicked()) {
                 state.menu_selected = m;
@@ -90,4 +91,4 @@ void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& 
     }
 }
 
-} // namespace ui
+} // namespace ui::widgets

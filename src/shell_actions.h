@@ -1,12 +1,12 @@
-
+// src/shell_actions.h
 #pragma once
-
 #include <functional>
-
-#include "app_discovery.h"
-#include "config.h"
-#include "shell_state.h"
+#include <vector>
 #include "input_manager.h"
+
+struct App;
+struct ShellState;
+struct Config;
 
 struct ShellActions {
     std::function<void(const App&)> launch;
@@ -21,14 +21,3 @@ struct ShellActions {
     std::function<void()> apply_controllers;
     std::function<std::vector<InputManager::DeviceInfo>()> devices;
 };
-
-void panelInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);
-void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a);
-
-void loadShellFonts(const Config& cfg, float screen_h);
-
-void drawShellImGui(
-    ShellState& state,
-    const Config& cfg,
-    const ShellActions& actions
-);

@@ -1,14 +1,15 @@
 #pragma once
+#include <imgui.h>
 #include "config.h"
 #include "shell_state.h"
-#include "shell_ui.h"
+#include "shell_actions.h"
 
-namespace ui {
+namespace ui::widgets {
 
-class TileCarousel {
+class SystemMenu {
 public:
     void draw(ShellState& state, const Config& cfg, const ShellActions& actions,
-              float W, float H, bool panel_open);
+              float W, float H);
 };
 
-} // namespace ui
+} // namespace ui::widgets
