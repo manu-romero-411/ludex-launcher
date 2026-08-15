@@ -5,11 +5,11 @@
 #include "panels/pan_settings.h"
 #include "panels/pan_shutdown.h"
 #include "panels/panel_renderer.h"
+#include "ui/panels/pan_mainmenu.h"
 #include "widgets/clock.h"
 #include "widgets/edge_fades.h"
 #include "widgets/help_hints.h"
 #include "widgets/player_indicators.h"
-#include "widgets/system_menu.h"
 #include "widgets/tile_carousel.h"
 #include "widgets/wallpaper.h"
 #include <imgui.h>
@@ -20,16 +20,14 @@ ui::widgets::EdgeFades g_edge_fades;
 ui::widgets::HelpHints g_help_hints;
 ui::widgets::PlayerIndicators g_player_indicators;
 ui::widgets::TileCarousel g_tile_carousel;
-ui::widgets::SystemMenu g_system_menu; // <-- NUEVO
 } // namespace
 
 void drawShellImGui(ShellState &state, const Config &cfg,
                     const ShellActions &actions) {
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
-bool panel_open = state.show_settings || state.show_power ||
-                  state.show_controllers || state.show_bluetooth ||
-                  state.show_bluetooth_scan;
+  bool panel_open =
+      state.anyPanelOpen() || state.panel_anim != ShellState::PanelAnim::Idle;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::SetNextWindowPos(vp->WorkPos);
@@ -79,29 +77,40 @@ bool panel_open = state.show_settings || state.show_power ||
 
   // --- Paneles (usando el renderer genérico) ---
   Config &mutable_cfg = const_cast<Config &>(cfg);
-  if (state.show_settings) {
-    auto spec = ui::panels::makeSettingsPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else if (state.show_power) {
-    auto spec = ui::panels::makeShutdownPanelSpec(state, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else if (state.show_controllers) {
-    auto spec =
-        ui::panels::makeControllersPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else if (state.show_bluetooth) {
-    auto spec = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else if (state.show_bluetooth_scan) {
-    auto spec =
+  switch (state.drawPanelId()) {
+  case 1: {
+    auto s = ui::panels::makeSettingsPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  case 2: {
+    auto s = ui::panels::makeShutdownPanelSpec(state, actions);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  case 3: {
+    auto s = ui::panels::makeControllersPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  case 4: {
+    auto s = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  case 5: {
+    auto s =
         ui::panels::makeBluetoothScanPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else {
-    if (state.menu_anim > 0.001f) {
-      dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
-                        IM_COL32(0, 0, 0, (int)(130 * state.menu_anim)));
-    }
-    g_system_menu.draw(state, cfg, actions, W, H);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  case 6: {
+    auto s = ui::panels::makeSystemPanelSpec(state, actions);
+    ui::panels::drawGenericPanel(s, state, mutable_cfg, actions);
+    break;
+  }
+  default:
+    break;
   }
 
   // --- Widgets de HUD ---

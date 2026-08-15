@@ -109,6 +109,28 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
 
   Layout L = computeLayout(list_count, cfg);
 
+  // ---- animación de deslizamiento + fundido del fondo ----
+  const ImGuiViewport *vpa = ImGui::GetMainViewport();
+  bool animating = st.panel_anim != ShellState::PanelAnim::Idle;
+  float eased = animating ? st.panelEased() : 1.0f;
+
+  // Recorrido completo: desde el reposo hasta quedar totalmente bajo la pantalla
+  float hide_dist = vpa->WorkSize.y - L.py;
+  float anim_offset = (1.0f - eased) * hide_dist;
+
+  L.py += anim_offset;
+  L.panel_min.y += anim_offset;
+  L.panel_max.y += anim_offset;
+  L.content_min.y += anim_offset;
+  L.content_max.y += anim_offset;
+
+  // El velo de fondo aparece/desaparece con el panel (ya gradual)
+  if (animating) {
+    int a = (int)(210 * eased);
+    L.fade_col =
+        isLight(cfg.theme) ? IM_COL32(240, 240, 240, a) : IM_COL32(0, 0, 0, a);
+  }
+
   // ---- estado de scroll ----
   float scroll = spec.scroll_ptr ? *spec.scroll_ptr : 0.0f;
   float max_scroll = std::max(0, list_count - L.visible_rows);

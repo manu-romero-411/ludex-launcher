@@ -16,6 +16,9 @@ public:
 
 private:
   void setupActions();
+  void startAppFade(bool fade_in);
+  void updateAppFade(float dt);
+  void renderAppFade();
   void processEvents(float dt);
   void handleAction(UiAction a);
   void handleKeyboard(const SDL_Event &e);
@@ -40,7 +43,14 @@ private:
   DragState drag_;
   ShellActions actions_;
   BluetoothManager bluetooth_;
+  // Fade de transición de apps
+  bool app_fade_active_ = false;
+  bool app_fade_in_ = true; // true = fade a negro, false = fade desde negro
+  float app_fade_progress_ = 0.0f;
+  float app_fade_duration_ = 0.3f;
+  int pending_fade_launch_ = -1;
 
+  // bt
   bool bt_rescan_pending_ = false;
   bool running_ = false;
   bool want_quit_ = false;
@@ -48,5 +58,4 @@ private:
   int sw_ = 0, sh_ = 0;
   Uint64 last_time_ = 0;
   Uint64 bt_rescan_time_ = 0;
-
 };

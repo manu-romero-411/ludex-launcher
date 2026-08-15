@@ -65,7 +65,7 @@ add_executable(ludex-launcher
     src/ui/widgets/edge_fades.cpp
     src/ui/widgets/tile_carousel.cpp
     src/ui/widgets/wallpaper.cpp
-    src/ui/widgets/system_menu.cpp
+    src/ui/panels/pan_mainmenu.cpp
     src/ui/panels/panel_renderer.cpp
     src/ui/panels/pan_settings.cpp
     src/ui/panels/pan_shutdown.cpp
@@ -90,16 +90,46 @@ add_executable(ludex-launcher
     src/ui/panels/pan_bluetooth_scan.cpp
 )
 
+# ---------------------------------------------------------------------------
+# i18n: locale/<lang>/LC_MESSAGES/ludex.po -> build/locale/<lang>/LC_MESSAGES/ludex.mo
+# ---------------------------------------------------------------------------
+find_program(MSGFMT_EXECUTABLE msgfmt)
+if(MSGFMT_EXECUTABLE)
+    file(GLOB_RECURSE PO_FILES ${CMAKE_SOURCE_DIR}/locale/*.po)
+    set(MO_OUTPUTS "")
+    foreach(PO_FILE ${PO_FILES})
+        get_filename_component(PO_NAME ${PO_FILE} NAME_WE) # ludex
+        get_filename_component(PO_DIR ${PO_FILE} DIRECTORY) # .../LC_MESSAGES
+        get_filename_component(LANG_DIR ${PO_DIR} DIRECTORY) # .../es
+        get_filename_component(LANG ${LANG_DIR} NAME) # es
+        set(MO_DIR ${CMAKE_BINARY_DIR}/locale/${LANG}/LC_MESSAGES)
+        set(MO_FILE ${MO_DIR}/${PO_NAME}.mo)
+        add_custom_command(
+            OUTPUT ${MO_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${MO_DIR}
+            COMMAND ${MSGFMT_EXECUTABLE} --check-format -o ${MO_FILE} ${PO_FILE}
+            DEPENDS ${PO_FILE}
+            COMMENT "msgfmt ${LANG}/${PO_NAME}.mo")
+        list(APPEND MO_OUTPUTS ${MO_FILE})
+        install(FILES ${MO_FILE} DESTINATION share/locale/${LANG}/LC_MESSAGES)
+    endforeach()
+    if(MO_OUTPUTS)
+        add_custom_target(translations ALL DEPENDS ${MO_OUTPUTS})
+        add_dependencies(ludex-launcher translations)
+    endif()
+else()
+    message(WARNING "msgfmt no encontrado; traducciones desactivadas")
+endif()
+
+# En dev apuntamos al build; al empaquetar: cmake -DLOCALEDIR=<prefix>/share/locale
+if(NOT DEFINED LOCALEDIR)
+    set(LOCALEDIR "${CMAKE_BINARY_DIR}/locale")
+endif()
+target_compile_definitions(ludex-launcher PRIVATE LOCALEDIR="${LOCALEDIR}")
+
 target_include_directories(ludex-launcher PRIVATE
     src
     ${stb_SOURCE_DIR}
-)
-
-# Definir LOCALEDIR para gettext
-# Si estás probando en local, usa CMAKE_CURRENT_SOURCE_DIR. 
-# Si vas a empaquetar/instalar, cámbialo a CMAKE_INSTALL_PREFIX/share/locale
-target_compile_definitions(ludex-launcher PRIVATE 
-    LOCALEDIR="${CMAKE_CURRENT_SOURCE_DIR}/locale"
 )
 
 target_link_libraries(ludex-launcher PRIVATE

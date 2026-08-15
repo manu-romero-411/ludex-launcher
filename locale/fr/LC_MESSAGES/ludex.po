@@ -1,13 +1,13 @@
 msgid ""
 msgstr ""
-"Language: es\n"
+"Language: fr\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
 msgid "SETTINGS"
 msgstr "AJUSTES"
 
 msgid "CONTROLLERS"
-msgstr "MANDOS"
+msgstr "MANNETTES"
 
 msgid "QUIT TO DESKTOP"
 msgstr "SALIR AL ESCRITORIO"
@@ -22,5 +22,5 @@ msgid "BACK"
 msgstr "ATRÁS"
 
 msgid "%A %d %B %Y"
-msgstr "%A %d de %B de %Y"
+msgstr "%A %d %B %Y"
 

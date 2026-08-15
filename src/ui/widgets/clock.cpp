@@ -9,7 +9,7 @@ void Clock::draw(const Config& cfg, const ImGuiViewport* vp, bool left_side, boo
     std::tm* local = std::localtime(&now);
     char time_text[32], date_text[128];
     std::strftime(time_text, sizeof(time_text), "%H:%M:%S", local);
-    std::strftime(date_text, sizeof(date_text), "%A %d de %B de %Y", local);
+    std::strftime(date_text, sizeof(date_text), "%A %d %B %Y", local);
 
     float margin = vp->WorkSize.x * 0.018f;
 

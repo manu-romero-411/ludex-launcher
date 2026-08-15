@@ -1,4 +1,5 @@
 #include "pan_controllers.h"
+#include "../../core/i18n.h"
 #include "../../input/input_manager.h"
 
 namespace ui::panels {
@@ -27,14 +28,17 @@ PanelSpec makeControllersPanelSpec(ShellState &st, Config &cfg,
   PanelSpec spec;
 
   if (!picking) {
-    spec.title = "CONTROLLER ASSIGNMENT";
+    spec.title = _("CONTROLLER ASSIGNMENT");
     spec.focus_ptr = &st.controllers_focus;
     spec.scroll_ptr = &st.settings_scroll;
-    spec.on_back = [](ShellState &s, Config &) { s.show_controllers = false; };
-
+    spec.on_back = [](ShellState &s, Config &) {
+      s.show_controllers = false;
+      s.show_system = true;
+      s.system_focus = 0;
+    };
     for (int p = 0; p < 8; ++p) {
       RowDefinition row;
-      row.label = "PLAYER " + std::to_string(p + 1) + " PAD";
+      row.label = _("PLAYER ") + std::to_string(p + 1) + _(" PAD");
       row.kind = RowKind::Activator;
       row.icon = RowIcon::Gamepad;
       row.get_value = [&cfg, devs, p](const Config &) {
@@ -49,11 +53,13 @@ PanelSpec makeControllersPanelSpec(ShellState &st, Config &cfg,
 
     // Footer: BACK
     RowDefinition back_row;
-    back_row.label = "BACK";
+    back_row.label = _("BACK");
     back_row.kind = RowKind::Footer;
     back_row.icon = RowIcon::Exit;
     back_row.on_select = [](ShellState &s, Config &, const ShellActions &) {
       s.show_controllers = false;
+      s.show_system = true;
+      s.system_focus = 0;
     };
     spec.rows.push_back(back_row);
 
@@ -69,7 +75,7 @@ PanelSpec makeControllersPanelSpec(ShellState &st, Config &cfg,
 
     // Fila DEFAULT
     RowDefinition default_row;
-    default_row.label = "DEFAULT";
+    default_row.label = _("DEFAULT");
     default_row.kind = RowKind::Activator;
     default_row.icon = RowIcon::None;
     default_row.on_select = [&st, &cfg, &actions](ShellState &s, Config &c,
@@ -105,7 +111,7 @@ PanelSpec makeControllersPanelSpec(ShellState &st, Config &cfg,
 
     // Footer: CANCEL
     RowDefinition cancel_row;
-    cancel_row.label = "CANCEL";
+    cancel_row.label = _("CANCEL");
     cancel_row.kind = RowKind::Footer;
     cancel_row.icon = RowIcon::Exit;
     cancel_row.on_select = [](ShellState &s, Config &, const ShellActions &) {

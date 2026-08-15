@@ -6,6 +6,7 @@
 #include "panels/pan_shutdown.h"
 #include "panels/panel_renderer.h"
 #include "shell/shell_state.h"
+#include "ui/panels/pan_mainmenu.h"
 
 void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
                       UiAction a) {
@@ -13,7 +14,6 @@ void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
     return;
   auto devs = actions.devices ? actions.devices()
                               : std::vector<InputManager::DeviceInfo>{};
-
   if (st.controller_pick_player < 0) {
     const int count = 9; // 8 players + BACK
     int &f = st.controllers_focus;
@@ -30,11 +30,15 @@ void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
         st.controller_pick_focus = 0;
       } else {
         st.show_controllers = false;
+        st.show_system = true;
+        st.system_focus = 0;
       }
       break;
     case UiAction::Back:
     case UiAction::Guide:
       st.show_controllers = false;
+      st.show_system = true;
+      st.system_focus = 0;
       break;
     default:
       break;
@@ -78,9 +82,11 @@ void controllersInput(ShellState &st, Config &cfg, const ShellActions &actions,
   }
 }
 
-void panelInput(ShellState &st, Config &cfg, const ShellActions &actions,
-                UiAction a) {
-  if (st.show_settings) {
+void panelInput(ShellState &st, Config &cfg, const ShellActions &actions, UiAction a) {
+    if (st.show_system) {
+        auto spec = ui::panels::makeSystemPanelSpec(st, actions);
+        ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+    } else if (st.show_settings) {
     auto spec = ui::panels::makeSettingsPanelSpec(st, cfg, actions);
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   } else if (st.show_power) {

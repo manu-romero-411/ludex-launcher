@@ -73,8 +73,8 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
           rows[j - 1].main_pos + (rows[j - 1].h + rows[j].h) * 0.5f;
   }
 
-  bool accept_tile_input = !state.menu_open && !panel_open;
-
+  bool accept_tile_input = !panel_open;
+  
   for (const Row &row : rows) {
     const App &app = state.apps[row.idx];
     float t = smooth(std::clamp(1.0f - std::fabs(row.d), 0.0f, 1.0f));

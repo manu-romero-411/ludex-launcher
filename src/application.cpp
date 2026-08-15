@@ -37,6 +37,131 @@ SDL_Surface *Application::loadWindowIcon() {
   return nullptr;
 }
 
+void Application::setupActions() {
+  actions_.launch = [this](const App &app) {
+    const Backend *b = backends_.find(app.backend);
+    if (!b) {
+      SDL_Log("[ludex] backend '%s' no disponible", app.backend.c_str());
+      return;
+    }
+
+    std::string ccfg_str = input_.controllersConfigString();
+    std::filesystem::path ccfg_file =
+        input_.writeControllersConfig(runtimeDir());
+
+    std::vector<std::string> cmd =
+        buildBackendCommand(*b, app.run, app.webapp_path, ccfg_str, ccfg_file);
+    if (cmd.empty())
+      return;
+
+    LaunchHooks hooks;
+    hooks.before = [this] {
+      audio_.stopMusic();
+      app_running_ = true;
+      input_.closeControllers();
+      renderer_->presentBlackFrame();
+      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+    };
+    hooks.after = [this] {
+      startAppFade(false);
+      drag_.reset();
+      input_.clearTransientState();
+      renderer_->getOutputSize(&sw_, &sh_);
+      input_.rescanControllers();
+      app_running_ = false;
+      SDL_RaiseWindow(window_);
+      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+      // Pequeño delay para evitar inputs residuales
+      SDL_Delay(50);
+      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+      backends_.loadAll();
+      shell_.refresh(cfg_, backends_);
+      loadShellAssets(*renderer_, shell_, cfg_, sw_, sh_);
+      audio_.startMusic();
+      shell_.dragging = false;
+      shell_.has_momentum = false;
+      shell_.drag_velocity = 0.0f;
+    };
+    launchApp(cmd, hooks);
+  };
+
+  actions_.open_settings = [this] {
+    shell_.show_settings = true;
+    shell_.settings_focus = 0;
+  };
+  actions_.quit = [this] { want_quit_ = true; };
+  actions_.poweroff = [] {
+    launchApp({"systemctl", "poweroff"}, LaunchHooks{});
+  };
+  actions_.reboot = [] { launchApp({"systemctl", "reboot"}, LaunchHooks{}); };
+  actions_.suspend = [] { launchApp({"systemctl", "suspend"}, LaunchHooks{}); };
+  actions_.player_status = [this] { return input_.playerStatus(); };
+  actions_.reload_ui_icons = [this] {
+    loadUiIcons(*renderer_, shell_, cfg_, sh_);
+  };
+
+  actions_.open_controllers = [this] {
+    shell_.show_controllers = true;
+    shell_.controllers_focus = 0;
+    shell_.controller_pick_player = -1;
+  };
+  actions_.apply_controllers = [this] {
+    std::vector<std::string> guids;
+    for (int i = 0; i < Config::MAX_PLAYERS; ++i)
+      guids.push_back(cfg_.controller_guid[i]);
+    input_.applyAssignment(guids);
+  };
+  actions_.devices = [this] { return input_.devices(); };
+
+  actions_.open_bluetooth = [this] {
+    shell_.show_bluetooth = true;
+    shell_.bluetooth_focus = 0;
+  };
+  actions_.bluetooth_available = [this] { return bluetooth_.available(); };
+  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
+  actions_.bluetooth_connect = [this](const std::string &mac) {
+    bluetooth_.connect(mac);
+  };
+  actions_.bluetooth_disconnect = [this](const std::string &mac) {
+    bluetooth_.disconnect(mac);
+  };
+  actions_.bluetooth_remove = [this](const std::string &mac) {
+    bluetooth_.removeDevice(mac);
+  };
+  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
+  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
+  actions_.bluetooth_scan_remaining = [this] {
+    return bluetooth_.scanRemainingSec();
+  };
+  actions_.bluetooth_discovered = [this] {
+    return bluetooth_.discoveredDevices();
+  };
+  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
+  actions_.bluetooth_pair = [this](const std::string &mac) {
+    bluetooth_.pair(mac);
+  };
+  actions_.bluetooth_connect = [this](const std::string &mac) {
+    bluetooth_.connect(mac);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+  };
+  actions_.bluetooth_disconnect = [this](const std::string &mac) {
+    bluetooth_.disconnect(mac);
+    bt_rescan_pending_ = true;
+    bt_rescan_time_ = SDL_GetPerformanceCounter();
+  };
+  actions_.bluetooth_remove = [this](const std::string &mac) {
+    bluetooth_.removeDevice(mac);
+  };
+  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
+  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
+  actions_.bluetooth_scan_remaining = [this] {
+    return bluetooth_.scanRemainingSec();
+  };
+}
+
 bool Application::init() {
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
   SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
@@ -141,127 +266,7 @@ bool Application::init() {
   return true;
 }
 
-void Application::setupActions() {
-  actions_.launch = [this](const App &app) {
-    const Backend *b = backends_.find(app.backend);
-    if (!b) {
-      SDL_Log("[ludex] backend '%s' no disponible", app.backend.c_str());
-      return;
-    }
 
-    std::string ccfg_str = input_.controllersConfigString();
-    std::filesystem::path ccfg_file =
-        input_.writeControllersConfig(runtimeDir());
-
-    std::vector<std::string> cmd =
-        buildBackendCommand(*b, app.run, app.webapp_path, ccfg_str, ccfg_file);
-    if (cmd.empty())
-      return;
-
-    LaunchHooks hooks;
-    hooks.before = [this] {
-      audio_.stopMusic();
-      app_running_ = true;
-      input_.closeControllers();
-      renderer_->presentBlackFrame();
-      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-    };
-    hooks.after = [this] {
-      drag_.reset();
-      input_.clearTransientState();
-      renderer_->getOutputSize(&sw_, &sh_);
-      input_.rescanControllers();
-      app_running_ = false;
-      SDL_RaiseWindow(window_);
-      SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-      backends_.loadAll();
-      shell_.refresh(cfg_, backends_);
-      loadShellAssets(*renderer_, shell_, cfg_, sw_, sh_);
-      audio_.startMusic();
-      shell_.dragging = false;
-      shell_.has_momentum = false;
-      shell_.drag_velocity = 0.0f;
-    };
-    launchApp(cmd, hooks);
-  };
-
-  actions_.open_settings = [this] {
-    shell_.show_settings = true;
-    shell_.menu_open = false;
-    shell_.settings_focus = 0;
-  };
-  actions_.quit = [this] { want_quit_ = true; };
-  actions_.poweroff = [] {
-    launchApp({"systemctl", "poweroff"}, LaunchHooks{});
-  };
-  actions_.reboot = [] { launchApp({"systemctl", "reboot"}, LaunchHooks{}); };
-  actions_.suspend = [] { launchApp({"systemctl", "suspend"}, LaunchHooks{}); };
-  actions_.player_status = [this] { return input_.playerStatus(); };
-  actions_.reload_ui_icons = [this] {
-    loadUiIcons(*renderer_, shell_, cfg_, sh_);
-  };
-
-  actions_.open_controllers = [this] {
-    shell_.show_controllers = true;
-    shell_.menu_open = false;
-    shell_.controllers_focus = 0;
-    shell_.controller_pick_player = -1;
-  };
-  actions_.apply_controllers = [this] {
-    std::vector<std::string> guids;
-    for (int i = 0; i < Config::MAX_PLAYERS; ++i)
-      guids.push_back(cfg_.controller_guid[i]);
-    input_.applyAssignment(guids);
-  };
-  actions_.devices = [this] { return input_.devices(); };
-
-  actions_.open_bluetooth = [this] {
-    shell_.show_bluetooth = true;
-    shell_.menu_open = false;
-    shell_.bluetooth_focus = 0;
-  };
-  actions_.bluetooth_available = [this] { return bluetooth_.available(); };
-  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
-  actions_.bluetooth_connect = [this](const std::string &mac) {
-    bluetooth_.connect(mac);
-  };
-  actions_.bluetooth_disconnect = [this](const std::string &mac) {
-    bluetooth_.disconnect(mac);
-  };
-  actions_.bluetooth_remove = [this](const std::string &mac) {
-    bluetooth_.removeDevice(mac);
-  };
-  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
-  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
-  actions_.bluetooth_scan_remaining = [this] {
-    return bluetooth_.scanRemainingSec();
-  };
-  actions_.bluetooth_discovered = [this] {
-    return bluetooth_.discoveredDevices();
-  };
-  actions_.bluetooth_scan = [this] { bluetooth_.startScan(12); };
-  actions_.bluetooth_pair = [this](const std::string &mac) {
-    bluetooth_.pair(mac);
-  };
-  actions_.bluetooth_connect = [this](const std::string &mac) {
-    bluetooth_.connect(mac);
-    bt_rescan_pending_ = true;
-    bt_rescan_time_ = SDL_GetPerformanceCounter();
-  };
-  actions_.bluetooth_disconnect = [this](const std::string &mac) {
-    bluetooth_.disconnect(mac);
-    bt_rescan_pending_ = true;
-    bt_rescan_time_ = SDL_GetPerformanceCounter();
-  };
-  actions_.bluetooth_remove = [this](const std::string &mac) {
-    bluetooth_.removeDevice(mac);
-  };
-  actions_.bluetooth_devices = [this] { return bluetooth_.devices(); };
-  actions_.bluetooth_scanning = [this] { return bluetooth_.isScanning(); };
-  actions_.bluetooth_scan_remaining = [this] {
-    return bluetooth_.scanRemainingSec();
-  };
-}
 
 int Application::run() {
   while (running_) {
@@ -270,9 +275,10 @@ int Application::run() {
                        (double)SDL_GetPerformanceFrequency());
     last_time_ = now_time;
 
+    updateAppFade(dt);
     processEvents(dt);
 
-    if (!app_running_) {
+    if (!app_running_ && !app_fade_active_) {
       input_.update();
       UiInput ui;
       while (input_.poll(ui)) {
@@ -308,14 +314,22 @@ int Application::run() {
     if (!app_running_ && shell_.pending_launch >= 0) {
       int idx = shell_.pending_launch;
       shell_.pending_launch = -1;
+      pending_fade_launch_ = idx;
+      startAppFade(true);
+    }
+    if (!app_running_ && pending_fade_launch_ >= 0 && app_fade_in_ &&
+        app_fade_progress_ >= 1.0f) {
+      int idx = pending_fade_launch_;
+      pending_fade_launch_ = -1;
       if (idx >= 0 && idx < (int)shell_.apps.size()) {
         actions_.launch(shell_.apps[idx]);
         last_time_ = SDL_GetPerformanceCounter();
       }
     }
-
+    shell_.updatePanelAnimation(dt);
     renderer_->beginFrame();
     renderer_->drawShell(shell_, cfg_, actions_);
+    renderAppFade();
     renderer_->endFrame();
   }
   return 0;
@@ -337,12 +351,24 @@ void Application::shutdown() {
 void Application::processEvents(float dt) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    // Bloquear completamente cuando una app está corriendo o hay fade activo
+    if (app_running_ || app_fade_active_) {
+      // Solo procesar eventos de ventana (cerrar, etc)
+      if (event.type == SDL_QUIT ||
+          (event.type == SDL_WINDOWEVENT &&
+           event.window.event == SDL_WINDOWEVENT_CLOSE)) {
+        running_ = false;
+      }
+      continue; // <-- AÑADIR: ignorar todos los demás eventos
+    }
+
     if (event.type == SDL_QUIT ||
         (event.type == SDL_WINDOWEVENT &&
          event.window.event == SDL_WINDOWEVENT_CLOSE)) {
       running_ = false;
       continue;
     }
+
     if (app_running_)
       continue;
 
@@ -351,8 +377,7 @@ void Application::processEvents(float dt) {
     if (event.type == SDL_KEYDOWN) {
       handleKeyboard(event);
     } else if (event.type == SDL_MOUSEWHEEL) {
-      if (!shell_.menu_open && !shell_.show_settings && !shell_.show_power &&
-          !shell_.show_controllers) {
+      if (!shell_.anyPanelOpen()) {
         if (event.wheel.y != 0) {
           int dy = (event.wheel.y > 0) ? -1 : 1;
           shell_.nav(dy);
@@ -468,8 +493,7 @@ void Application::handleMouseDrag(const SDL_Event &e) {
   };
 
   if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
-    if (!shell_.menu_open && !shell_.show_settings && !shell_.show_power &&
-        !shell_.show_controllers) {
+    if (!shell_.anyPanelOpen()) {
       drag_.mouse_down = true;
       drag_.drag_active = false;
       drag_.mouse_down_x = (float)e.button.x;
@@ -539,8 +563,7 @@ void Application::handleTouchDrag(const SDL_Event &e) {
   };
 
   if (e.type == SDL_FINGERDOWN) {
-    if (!shell_.menu_open && !shell_.show_settings && !shell_.show_power &&
-        !shell_.show_controllers) {
+    if (!shell_.anyPanelOpen()) {
       drag_.finger_down = true;
       drag_.touch_drag_active = false;
       drag_.finger_down_x = e.tfinger.x * (float)sw_;
@@ -576,85 +599,83 @@ void Application::handleAction(UiAction a) {
     controllersInput(shell_, cfg_, actions_, a);
     return;
   }
-
-  if (shell_.show_settings || shell_.show_power || shell_.show_bluetooth ||
-      shell_.show_bluetooth_scan) {
+  if (shell_.anyPanelOpen()) {
     panelInput(shell_, cfg_, actions_, a);
     return;
   }
 
   switch (a) {
   case UiAction::Left:
-    if (shell_.menu_open)
-      shell_.navMenu(-1);
-    else if (isHorizontal(cfg_.side)) {
+    if (isHorizontal(cfg_.side)) {
       shell_.nav(-1);
       audio_.playScrollSound();
     }
     break;
   case UiAction::Right:
-    if (shell_.menu_open)
-      shell_.navMenu(1);
-    else if (isHorizontal(cfg_.side)) {
+    if (isHorizontal(cfg_.side)) {
       shell_.nav(1);
       audio_.playScrollSound();
     }
     break;
   case UiAction::Up:
-    if (shell_.menu_open)
-      shell_.navMenu(-1);
-    else if (!isHorizontal(cfg_.side)) {
+    if (!isHorizontal(cfg_.side)) {
       shell_.nav(-1);
       audio_.playScrollSound();
     }
     break;
   case UiAction::Down:
-    if (shell_.menu_open)
-      shell_.navMenu(1);
-    else if (!isHorizontal(cfg_.side)) {
+    if (!isHorizontal(cfg_.side)) {
       shell_.nav(1);
       audio_.playScrollSound();
     }
     break;
   case UiAction::Select:
     audio_.playSelectSound();
-    if (shell_.menu_open) {
-      switch (shell_.menu_selected) {
-      case 0:
-        actions_.open_settings();
-        break;
-      case 1:
-        if (actions_.open_bluetooth)
-          actions_.open_bluetooth();
-        break;
-      case 2:
-        if (actions_.open_controllers)
-          actions_.open_controllers();
-        break;
-      case 3:
-        want_quit_ = true;
-        break;
-      case 4:
-      default:
-        shell_.show_power = true;
-        shell_.menu_open = false;
-        shell_.power_focus = 0;
-        break;
-      }
-    } else if (shell_.selectedApp()) {
+    if (shell_.selectedApp())
       shell_.pending_launch = shell_.selected;
-    }
-    break;
-  case UiAction::Back:
-    if (shell_.menu_open)
-      shell_.menu_open = false;
     break;
   case UiAction::Guide:
-    shell_.menu_open = !shell_.menu_open;
-    if (shell_.menu_open)
-      shell_.menu_selected = 0;
+    shell_.show_system = true;
+    shell_.system_focus = 0;
     break;
   default:
     break;
   }
+}
+
+void Application::startAppFade(bool fade_in) {
+  app_fade_active_ = true;
+  app_fade_in_ = fade_in;
+  app_fade_progress_ = fade_in ? 0.0f : 1.0f;
+}
+
+void Application::updateAppFade(float dt) {
+  if (!app_fade_active_)
+    return;
+
+  float speed = 1.0f / app_fade_duration_;
+
+  if (app_fade_in_) {
+    app_fade_progress_ += speed * dt;
+    if (app_fade_progress_ >= 1.0f) {
+      app_fade_progress_ = 1.0f;
+      // No detener aquí, esperar a que la app se cierre
+    }
+  } else {
+    app_fade_progress_ -= speed * dt;
+    if (app_fade_progress_ <= 0.0f) {
+      app_fade_progress_ = 0.0f;
+      app_fade_active_ = false;
+    }
+  }
+}
+
+void Application::renderAppFade() {
+  if (!app_fade_active_ && app_fade_progress_ <= 0.0f)
+    return;
+  ImGuiIO &io = ImGui::GetIO();
+  ImDrawList *dl = ImGui::GetForegroundDrawList(); // <-- CLAVE
+  int alpha = (int)(255.0f * app_fade_progress_);
+  dl->AddRectFilled(ImVec2(0, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y),
+                    IM_COL32(0, 0, 0, alpha));
 }

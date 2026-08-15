@@ -1,5 +1,7 @@
 #include "pan_bluetooth_scan.h"
+#include "../../core/i18n.h"
 #include "imgui.h"
+
 namespace {
 RowIcon iconForKind(BtDeviceKind k) {
   switch (k) {
@@ -19,7 +21,7 @@ namespace ui::panels {
 PanelSpec makeBluetoothScanPanelSpec(ShellState &st, Config &cfg,
                                      const ShellActions &actions) {
   PanelSpec spec;
-  spec.title = "BLUETOOTH SCAN";
+  spec.title = _("BLUETOOTH SCAN");
   spec.focus_ptr = &st.bluetooth_scan_focus;
   spec.scroll_ptr = &st.settings_scroll;
   spec.on_back = [](ShellState &s, Config &) {
@@ -34,7 +36,7 @@ PanelSpec makeBluetoothScanPanelSpec(ShellState &st, Config &cfg,
                   ? actions.bluetooth_scan_remaining()
                   : 0;
     RowDefinition row;
-    row.label = "SCANNING... (" + std::to_string(rem) + "s)";
+    row.label = _("SCANNING... (") + std::to_string(rem) + _("s)");
     row.kind = RowKind::Label;
     row.icon = RowIcon::Bluetooth;
     spec.rows.push_back(row);
@@ -62,7 +64,7 @@ PanelSpec makeBluetoothScanPanelSpec(ShellState &st, Config &cfg,
   }
 
   RowDefinition back_row;
-  back_row.label = "BACK";
+  back_row.label = _("BACK");
   back_row.kind = RowKind::Footer;
   back_row.icon = RowIcon::Exit;
   back_row.on_select = [](ShellState &s, Config &, const ShellActions &) {

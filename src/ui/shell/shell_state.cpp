@@ -29,10 +29,6 @@ void ShellState::nav(int dy) {
   selected = ((selected + dy) % n + n) % n;
 }
 
-void ShellState::navMenu(int dy) {
-  menu_selected = std::clamp(menu_selected + dy, 0, 4);
-}
-
 void ShellState::updateDrag(float dt) {
   if (!has_momentum || dragging)
     return;
@@ -62,12 +58,6 @@ void ShellState::update(float dt, const Config &cfg) {
     float alpha = std::min(1.0f, LERP_RATE * dt);
     offset += delta * alpha;
   }
-
-  // Menú sistema
-  float target = menu_open ? 1.0f : 0.0f;
-  menu_anim += (target - menu_anim) * std::min(1.0f, 12.0f * dt);
-  if (std::fabs(target - menu_anim) < 0.001f)
-    menu_anim = target;
 
   // Ken Burns + crossfade (sin cambios)
   if (wallpapers.empty()) {
@@ -140,4 +130,71 @@ void ShellState::nextWallpaper() {
   wp_in_transition = true;
   wp_fade = 1.0f;
   wp_timer = 0.0f;
+}
+
+int ShellState::openPanelId() const {
+  if (show_settings) return 1;
+  if (show_power) return 2;
+  if (show_controllers) return 3;
+  if (show_bluetooth) return 4;
+  if (show_bluetooth_scan) return 5;
+  if (show_system) return 6;
+  return 0;
+}
+
+int ShellState::drawPanelId() const {
+  int id = openPanelId();
+  if (id == 0 && panel_anim == PanelAnim::Closing)
+    id = panel_last_id; // fantasma: sigue dibujándose mientras sale
+  return id;
+}
+
+float ShellState::panelEased() const {
+  float t = panel_anim_t;
+  if (panel_anim == PanelAnim::Closing)
+    return t * t;                          // ease-in: acelera hacia abajo
+  return 1.0f - (1.0f - t) * (1.0f - t);   // ease-out: frena al llegar
+}
+
+void ShellState::updatePanelAnimation(float dt) {
+  int curr = openPanelId();
+  constexpr int SYSTEM_ID = 6; // SOLO el panel system anima
+
+  if (panel_anim == PanelAnim::Idle) {
+    if (curr == SYSTEM_ID && panel_last_id == 0) {
+      panel_anim = PanelAnim::Opening; // system entra
+      panel_anim_t = 0.0f;
+    } else if (curr == 0 && panel_last_id == SYSTEM_ID) {
+      panel_anim = PanelAnim::Closing; // system sale a tiles
+      panel_anim_t = 1.0f;
+    }
+  } else if (panel_anim == PanelAnim::Opening) {
+    if (curr == 0)
+      panel_anim = PanelAnim::Closing; // cerrado a mitad de entrada: invertir
+    else if (curr != SYSTEM_ID) {      // saltó a un subpanel: sin animación
+      panel_anim = PanelAnim::Idle;
+      panel_anim_t = 1.0f;
+    }
+  } else if (panel_anim == PanelAnim::Closing) {
+    if (curr == SYSTEM_ID)
+      panel_anim = PanelAnim::Opening; // reabierto a mitad de salida: invertir
+    else if (curr != 0) {              // abrió otro panel: sin animación
+      panel_anim = PanelAnim::Idle;
+      panel_anim_t = 1.0f;
+    }
+  }
+
+  float speed = 1.0f / panel_anim_duration;
+  if (panel_anim == PanelAnim::Opening) {
+    panel_anim_t += speed * dt;
+    if (panel_anim_t >= 1.0f) { panel_anim_t = 1.0f; panel_anim = PanelAnim::Idle; }
+  } else if (panel_anim == PanelAnim::Closing) {
+    panel_anim_t -= speed * dt;
+    if (panel_anim_t <= 0.0f) { panel_anim_t = 0.0f; panel_anim = PanelAnim::Idle; }
+  }
+
+  if (curr != 0)
+    panel_last_id = curr;
+  else if (panel_anim == PanelAnim::Idle)
+    panel_last_id = 0;
 }

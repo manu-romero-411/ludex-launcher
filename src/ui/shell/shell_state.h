@@ -14,7 +14,18 @@ struct WallpaperLayer {
   float kb_pan_x = 0.0f, kb_pan_y = 0.0f;
 };
 
-enum class RowIcon { None, Settings, Exit, Shutdown, Restart, Suspend, Bluetooth, Headset, Gamepad, Gear };
+enum class RowIcon {
+  None,
+  Settings,
+  Exit,
+  Shutdown,
+  Restart,
+  Suspend,
+  Bluetooth,
+  Headset,
+  Gamepad,
+  Gear
+};
 
 struct UiIcons {
   TexturePtr settings;
@@ -78,13 +89,10 @@ struct ShellState {
   int selected = 0;
   float offset = 0.0f;
 
-  int menu_selected = 0;
   bool show_settings = false;
   bool show_power = false;
   int settings_focus = 0;
   int power_focus = 0;
-  bool menu_open = false;
-  float menu_anim = 0.0f;
 
   std::vector<WallpaperLayer> wallpapers;
   int wp_current = -1;
@@ -92,15 +100,17 @@ struct ShellState {
   float wp_timer = 0.0f;
   float wp_fade = 1.0f;
   bool wp_in_transition = false;
+  bool show_system = false;
+  int system_focus = 0;
+  float system_scroll = 0.0f;
+
+  bool anyPanelOpen() const {
+    return show_settings || show_power || show_controllers || show_bluetooth ||
+           show_bluetooth_scan || show_system;
+  }
 
   UiIcons ui_icons;
 
-  void refresh(const Config &cfg, const BackendRegistry &backends);
-  void nav(int dy);
-  void navMenu(int dy);
-  void update(float dt, const Config &cfg);
-
-  const App *selectedApp() const;
   bool show_controllers = false;
   int controllers_focus = 0;
   int controller_pick_player = -1;
@@ -113,13 +123,11 @@ struct ShellState {
   Uint32 drag_last_time = 0;
   float drag_velocity = 0.0f;
   bool has_momentum = false;
-  void updateDrag(float dt);
 
   bool tile_hovered = false;
   int tile_hovered_id = -1;
   bool tile_pressed = false;
   int tile_pressed_id = -1;
-  void nextWallpaper();
   int pending_launch = -1;
 
   bool show_bluetooth = false;
@@ -131,6 +139,24 @@ struct ShellState {
   float controllers_scroll = 0.0f;
   float bluetooth_scroll = 0.0f;
   float bluetooth_scan_scroll = 0.0f;
+  float panel_anim_t = 1.0f;
+  float panel_anim_duration = 0.18f;
+  int panel_last_id = 0;
+  void nextWallpaper();
+  void updateDrag(float dt);
+  void refresh(const Config &cfg, const BackendRegistry &backends);
+  void nav(int dy);
+  void update(float dt, const Config &cfg);
+
+  const App *selectedApp() const;
+
+  enum class PanelAnim { Idle, Opening, Closing };
+  PanelAnim panel_anim = PanelAnim::Idle;
+
+  int openPanelId() const;  // qué panel está lógicamente abierto
+  int drawPanelId() const;  // qué panel debe dibujar el orchestrator
+  float panelEased() const; // progreso 0..1 con easing
+  void updatePanelAnimation(float dt);
 
 private:
   static constexpr float LERP_RATE = 10.0f;
