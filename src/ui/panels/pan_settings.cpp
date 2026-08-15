@@ -1,5 +1,4 @@
 #include "pan_settings.h"
-#include "../../assets.h"
 #include <algorithm>
 
 namespace ui::panels {

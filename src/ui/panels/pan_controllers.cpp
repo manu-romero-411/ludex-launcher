@@ -1,5 +1,5 @@
 #include "pan_controllers.h"
-#include "input_manager.h"
+#include "../../input/input_manager.h"
 
 namespace ui::panels {
 

@@ -31,9 +31,9 @@ void PlayerIndicators::draw(
     float x = x_start + i * (s + gap);
 
     if (state.ui_icons.gamepad) {
-      dl->AddImage((ImTextureID)state.ui_icons.gamepad, ImVec2(x, y),
-                   ImVec2(x + s, y + s), ImVec2(0, 0), ImVec2(1, 1), col);
-    } else {
+    dl->AddImage((ImTextureID)state.ui_icons.gamepad.get(), ImVec2(x, y),
+                 ImVec2(x + s, y + s), ImVec2(0, 0), ImVec2(1, 1), col);
+} else {
       drawGamepadGlyph(dl, ImVec2(x, y), ImVec2(x + s, y + s), col);
     }
   }

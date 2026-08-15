@@ -22,20 +22,6 @@ void ShellState::refresh(const Config &cfg, const BackendRegistry &backends) {
   offset = (float)selected;
 }
 
-void ShellState::refreshAndFreeOldAssets(Renderer &renderer, const Config &cfg,
-                                          const BackendRegistry &backends) {
-    // Liberar texturas del vector ANTES de reemplazarlo
-    for (auto &app : apps) {
-        if (app.icon_texture) {
-            renderer.freeTexture(app.icon_texture);
-            app.icon_texture = nullptr;
-        }
-    }
-    
-    // Ahora sí, refrescar (esto reemplaza el vector apps)
-    refresh(cfg, backends);
-}
-
 void ShellState::nav(int dy) {
   if (apps.empty())
     return;

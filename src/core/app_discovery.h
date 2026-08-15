@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "config.h"
+#include "../ui/render/texture_handle.h"
 
 class BackendRegistry;
 
@@ -19,7 +20,7 @@ struct App {
     std::filesystem::path webapp_path;
     
     std::filesystem::path icon_path;
-    void* icon_texture = nullptr;
+    TexturePtr icon_texture;
     
     TileColor icon_tint{255, 255, 255};
     bool has_icon_tint = false;

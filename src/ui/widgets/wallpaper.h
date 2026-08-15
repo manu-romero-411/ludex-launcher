@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include "shell_state.h"
+#include "../shell/shell_state.h"
 
 namespace ui::widgets {
 

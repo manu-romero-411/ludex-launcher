@@ -18,9 +18,9 @@
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 
-#include "app_discovery.h" // para TileColor
-#include "config.h"
-#include "shell_state.h"
+#include "../../core/app_discovery.h"
+#include "../../core/config.h"
+#include "../shell/shell_state.h"
 #ifdef LUDEX_HAVE_RSVG
 #include <cairo.h>
 #include <librsvg/rsvg.h>

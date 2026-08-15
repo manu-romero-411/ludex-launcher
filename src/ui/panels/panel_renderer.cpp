@@ -1,7 +1,7 @@
 // src/ui/panels/panel_renderer.cpp (función simplificada)
 #include "panel_renderer.h"
 #include "../ui_common.h"
-#include "config.h"
+#include "../../core/config.h"
 #include <algorithm>
 #include <imgui.h>
 
@@ -102,8 +102,6 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     ImVec2 rmin = L.rowMin(i);
     ImVec2 rmax = L.rowMax(i);
 
-    ImGui::PushID(9000 + i);
-    ImGui::SetCursorScreenPos(rmin);
     ImGui::PushID(9000 + i);
     ImGui::SetCursorScreenPos(rmin);
     ImGui::InvisibleButton("##row", ImVec2(rmax.x - rmin.x, rmax.y - rmin.y));

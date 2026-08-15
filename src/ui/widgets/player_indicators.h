@@ -1,9 +1,9 @@
 #pragma once
 #include <imgui.h>
 #include <vector>
-#include "config.h"
-#include "input_manager.h"
-#include "shell_state.h"
+#include "../../core/config.h"
+#include "../../input/input_manager.h"
+#include "../shell/shell_state.h"
 
 namespace ui::widgets {
 

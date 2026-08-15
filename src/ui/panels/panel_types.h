@@ -2,8 +2,8 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include "config.h"
-#include "shell_state.h"
+#include "../../core/config.h"
+#include "../shell/shell_state.h"
 
 namespace ui::panels {
 

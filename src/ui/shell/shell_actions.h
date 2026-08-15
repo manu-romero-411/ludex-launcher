@@ -2,7 +2,7 @@
 #pragma once
 #include <functional>
 #include <vector>
-#include "input_manager.h"
+#include "../../input/input_manager.h"
 
 struct App;
 struct ShellState;

@@ -1,8 +1,8 @@
 #pragma once
 #include <imgui.h>
-#include "config.h"
-#include "shell_state.h"
-#include "shell_actions.h"
+#include "../../core/config.h"
+#include "../shell/shell_state.h"
+#include "../shell/shell_actions.h"
 
 namespace ui::widgets {
 

@@ -3,12 +3,12 @@
 #include <SDL_stdinc.h>
 #include <vector>
 
-#include "app_discovery.h"
-#include "config.h"
-#include "renderer.h"
+#include "../../core/app_discovery.h"
+#include "../../core/config.h"
+#include "../render/renderer.h"
 
 struct WallpaperLayer {
-  void *texture = nullptr;
+    TexturePtr texture;
   int w = 0, h = 0;
   float kb_scale = 1.0f;
   float kb_pan_x = 0.0f, kb_pan_y = 0.0f;
@@ -17,36 +17,28 @@ struct WallpaperLayer {
 enum class RowIcon { None, Settings, Exit, Shutdown, Restart, Suspend };
 
 struct UiIcons {
-  void *settings = nullptr;
-  void *exit = nullptr;
-  void *shutdown = nullptr;
-  void *restart = nullptr;
-  void *suspend = nullptr;
+    TexturePtr settings;
+    TexturePtr exit;
+    TexturePtr shutdown;
+    TexturePtr restart;
+    TexturePtr suspend;
+    TexturePtr nav_v;
+    TexturePtr nav_h;
+    TexturePtr accept;
+    TexturePtr back;
+    TexturePtr home;
+    TexturePtr gamepad;
 
-  void *nav_v = nullptr;
-  void *nav_h = nullptr;
-  void *accept = nullptr;
-  void *back = nullptr;
-  void *home = nullptr;
-  void *gamepad = nullptr;
-
-  void *byIndex(RowIcon icon) const {
+void *byIndex(RowIcon icon) const {
     switch (icon) {
-    case RowIcon::Settings:
-      return settings;
-    case RowIcon::Exit:
-      return exit;
-    case RowIcon::Shutdown:
-      return shutdown;
-    case RowIcon::Restart:
-      return restart;
-    case RowIcon::Suspend:
-      return suspend;
-    default:
-      return nullptr;
+    case RowIcon::Settings: return settings.get();
+    case RowIcon::Exit:     return exit.get();
+    case RowIcon::Shutdown: return shutdown.get();
+    case RowIcon::Restart:  return restart.get();
+    case RowIcon::Suspend:  return suspend.get();
+    default:                return nullptr;
     }
-  }
-};
+}};
 
 struct DragState {
     bool mouse_down = false;
@@ -88,9 +80,6 @@ struct ShellState {
   UiIcons ui_icons;
 
   void refresh(const Config &cfg, const BackendRegistry &backends);
-  void refreshAndFreeOldAssets(Renderer &renderer, const Config &cfg,
-                               const BackendRegistry &backends); // NUEVO
-
   void nav(int dy);
   void navMenu(int dy);
   void update(float dt, const Config &cfg);

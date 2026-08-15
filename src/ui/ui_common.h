@@ -1,8 +1,8 @@
 #pragma once
 #include <imgui.h>
 #include <string>
-#include "app_discovery.h"
-#include "config.h"
+#include "../core/app_discovery.h"
+#include "../core/config.h"
 
 namespace ui {
 

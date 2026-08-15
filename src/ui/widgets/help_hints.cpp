@@ -22,29 +22,29 @@ void HelpHints::draw(const ShellState &state, const Config &cfg,
   std::vector<Seg> segs;
 
   if (state.show_settings) {
-    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
-            {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
-            {ic.accept, "A", "OK"},
-            {ic.back, "B", "BACK"}};
+    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
+            {ic.nav_h.get(), "LEFT/RIGHT", "CHANGE"},
+            {ic.accept.get(), "A", "OK"},
+            {ic.back.get(), "B", "BACK"}};
   } else if (state.show_controllers) {
-    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
-            {ic.nav_h, "LEFT/RIGHT", "CHANGE"},
-            {ic.accept, "A", "OK"},
-            {ic.back, "B", "BACK"}};
+    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
+            {ic.nav_h.get(), "LEFT/RIGHT", "CHANGE"},
+            {ic.accept.get(), "A", "OK"},
+            {ic.back.get(), "B", "BACK"}};
   } else if (state.show_power) {
-    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
-            {ic.accept, "A", "ACCEPT"},
-            {ic.back, "B", "BACK"}};
+    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
+            {ic.accept.get(), "A", "ACCEPT"},
+            {ic.back.get(), "B", "BACK"}};
   } else if (state.menu_open) {
-    segs = {{ic.nav_v, "UP/DOWN", "NAVIGATE"},
-            {ic.accept, "A", "ACCEPT"},
-            {ic.back, "B / HOME", "CLOSE"}};
+    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
+            {ic.accept.get(), "A", "ACCEPT"},
+            {ic.back.get(), "B / HOME", "CLOSE"}};
   } else {
-    segs = {{horiz ? ic.nav_h : ic.nav_v, horiz ? "LEFT/RIGHT" : "UP/DOWN",
-             "NAVIGATE"},
-            {ic.accept, "A", "SELECT"},
-            {ic.back, "B", "BACK"},
-            {ic.home, "HOME", "SYSTEM MENU"}};
+    segs = {{horiz ? ic.nav_h.get() : ic.nav_v.get(),
+             horiz ? "LEFT/RIGHT" : "UP/DOWN", "NAVIGATE"},
+            {ic.accept.get(), "A", "SELECT"},
+            {ic.back.get(), "B", "BACK"},
+            {ic.home.get(), "HOME", "SYSTEM MENU"}};
   }
 
   ImGui::PushFont(ui::g_font_hint);

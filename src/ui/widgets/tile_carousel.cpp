@@ -103,7 +103,7 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
       tile_hovered = ImGui::IsItemHovered();
       tile_active = ImGui::IsItemActive();
 
-      if (ImGui::IsItemClicked()) {
+      if (tile_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         if (t > 0.9f)
           state.pending_launch = row.idx;
         else
@@ -168,7 +168,8 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
         icon_y = y0 + (label_y - y0 - isz) * 0.5f;
       }
       if (app.icon_texture) {
-        dl->AddImage((ImTextureID)app.icon_texture, ImVec2(icon_x, icon_y),
+        dl->AddImage((ImTextureID)app.icon_texture.get(),
+                     ImVec2(icon_x, icon_y),
                      ImVec2(icon_x + isz, icon_y + isz));
       }
       dl->AddText(g_font_tile, fs, ImVec2(label_x, label_y), label_col,
@@ -176,7 +177,7 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
     } else {
       if (app.icon_texture) {
         ImVec2 imin(x0 + pad, row.main_pos - isz * 0.5f);
-        dl->AddImage((ImTextureID)app.icon_texture, imin,
+        dl->AddImage((ImTextureID)app.icon_texture.get(), imin,
                      ImVec2(imin.x + isz, imin.y + isz));
       }
       dl->AddText(g_font_tile, fs,

@@ -7,38 +7,51 @@
 #include <unistd.h>
 
 // --- Conversiones string <-> enum ---
-LayoutSide parseSide(const std::string& s) {
-    if (s == "right") return LayoutSide::Right;
-    if (s == "top")   return LayoutSide::Top;
-    if (s == "bottom") return LayoutSide::Bottom;
-    return LayoutSide::Left;
+LayoutSide parseSide(const std::string &s) {
+  if (s == "right")
+    return LayoutSide::Right;
+  if (s == "top")
+    return LayoutSide::Top;
+  if (s == "bottom")
+    return LayoutSide::Bottom;
+  return LayoutSide::Left;
 }
 std::string sideToString(LayoutSide v) {
-    switch (v) {
-    case LayoutSide::Right: return "right";
-    case LayoutSide::Top:   return "top";
-    case LayoutSide::Bottom: return "bottom";
-    default:                return "left";
-    }
+  switch (v) {
+  case LayoutSide::Right:
+    return "right";
+  case LayoutSide::Top:
+    return "top";
+  case LayoutSide::Bottom:
+    return "bottom";
+  default:
+    return "left";
+  }
 }
-Theme parseTheme(const std::string& s) {
-    if (s == "light") return Theme::Light;
-    return Theme::Dark;
+Theme parseTheme(const std::string &s) {
+  if (s == "light")
+    return Theme::Light;
+  return Theme::Dark;
 }
 std::string themeToString(Theme v) {
-    return v == Theme::Light ? "light" : "dark";
+  return v == Theme::Light ? "light" : "dark";
 }
-HelpIcons parseHelpIcons(const std::string& s) {
-    if (s == "playstation") return HelpIcons::PlayStation;
-    if (s == "none")        return HelpIcons::None;
-    return HelpIcons::Xbox;
+HelpIcons parseHelpIcons(const std::string &s) {
+  if (s == "playstation")
+    return HelpIcons::PlayStation;
+  if (s == "none")
+    return HelpIcons::None;
+  return HelpIcons::Xbox;
 }
 std::string helpIconsToString(HelpIcons v) {
-    switch (v) {
-    case HelpIcons::PlayStation: return "playstation";
-    case HelpIcons::None:        return "none";
-    default:                     return "xbox";
-    }
+  switch (v) {
+  case HelpIcons::PlayStation:
+    return "playstation";
+  case HelpIcons::None:
+    return "none";
+  default:
+    return "xbox";
+  }
 }
 
 /* ------------------------------------------------------------------
@@ -116,9 +129,11 @@ bool Config::load(const std::filesystem::path &path) {
   font_bold = ini.get(S, "font_bold", defaults::fontBold());
 
   // Layout
-side = parseSide(ini.get(S, "side", sideToString(side)));
-theme = parseTheme(ini.get(S, "theme", themeToString(theme)));
-help_icons = parseHelpIcons(ini.get(S, "help_icons", helpIconsToString(help_icons)));  visible_items = ini.getInt(S, "visible_items", visible_items);
+  side = parseSide(ini.get(S, "side", sideToString(side)));
+  theme = parseTheme(ini.get(S, "theme", themeToString(theme)));
+  help_icons =
+      parseHelpIcons(ini.get(S, "help_icons", helpIconsToString(help_icons)));
+  visible_items = ini.getInt(S, "visible_items", visible_items);
   menu_h_pct = ini.getFloat(S, "menu_h_pct", menu_h_pct);
   icon_pct = ini.getFloat(S, "icon_pct", icon_pct);
   icon_sel_pct = ini.getFloat(S, "icon_sel_pct", icon_sel_pct);
@@ -216,7 +231,9 @@ bool Config::save(const std::filesystem::path &path) const {
   ini.set(S, "font_regular", font_regular);
   ini.set(S, "font_bold", font_bold);
 
-  ini.set(S, "side", side);
+  ini.set(S, "side", sideToString(side));
+  ini.set(S, "theme", themeToString(theme));
+  ini.set(S, "help_icons", helpIconsToString(help_icons));
   ini.set(S, "visible_items", std::to_string(visible_items));
   ini.set(S, "menu_h_pct", std::to_string(menu_h_pct));
   ini.set(S, "icon_pct", std::to_string(icon_pct));
@@ -225,7 +242,6 @@ bool Config::save(const std::filesystem::path &path) const {
   ini.set(S, "edge_fade_pct", std::to_string(edge_fade_pct));
   ini.set(S, "edge_fade_alpha", std::to_string(edge_fade_alpha));
   ini.set(S, "active_player", std::to_string(active_player));
-  ini.set(S, "theme", theme); // save
   ini.set(S, "show_player_indicators", show_player_indicators ? "1" : "0");
   ini.set(S, "wallpaper_interval", std::to_string(wallpaper_interval));
   ini.set(S, "wallpaper_ken_burns", wallpaper_ken_burns ? "1" : "0");
@@ -233,7 +249,6 @@ bool Config::save(const std::filesystem::path &path) const {
           std::to_string(wallpaper_ken_burns_zoom));
   ini.set(S, "wallpaper_fade_duration",
           std::to_string(wallpaper_fade_duration));
-  ini.set(S, "help_icons", help_icons);
   if (!icons_dir.empty())
     ini.set(S, "icons_dir", icons_dir.string());
   ini.set(S, "all_players_ui", all_players_ui ? "1" : "0");
@@ -281,5 +296,3 @@ Config loadConfig() {
   cfg.load(path);
   return cfg;
 }
-
-

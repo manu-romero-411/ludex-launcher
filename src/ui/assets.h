@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "../core/config.h"
 
 class Renderer;
 struct ShellState;

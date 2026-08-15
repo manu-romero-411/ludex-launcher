@@ -2,7 +2,7 @@
 #pragma once
 
 #include <filesystem>
-#include "shell_actions.h"
+#include "../shell/shell_actions.h"
 #include <memory>
 
 struct SDL_Window;

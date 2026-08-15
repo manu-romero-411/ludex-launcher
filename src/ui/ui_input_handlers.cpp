@@ -1,5 +1,5 @@
-#include "input_manager.h"
-#include "shell_state.h"
+#include "../input/input_manager.h"
+#include "shell/shell_state.h"
 #include "ui_input_handlers.h"
 #include "panels/pan_settings.h"
 #include "panels/pan_shutdown.h"
