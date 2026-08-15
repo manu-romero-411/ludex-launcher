@@ -6,7 +6,7 @@ namespace ui::widgets {
 void EdgeFades::draw(const Config& cfg, float W, float H) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     int a = (int)std::clamp(cfg.edge_fade_alpha, 0.0f, 255.0f);
-    bool light = (cfg.theme == "light");
+bool light = isLight(cfg.theme);
     ImU32 edge = light ? IM_COL32(245, 245, 245, a) : IM_COL32(0, 0, 0, a);
     ImU32 none = light ? IM_COL32(245, 245, 245, 0) : IM_COL32(0, 0, 0, 0);
 

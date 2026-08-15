@@ -157,8 +157,8 @@ void loadUiIcons(Renderer &renderer, ShellState &state, const Config &cfg,
   ic.gamepad =
       load(cfg.icons_dir / "gamepad.svg", (int)(screen_h * 0.030f), true);
   // Ayuda: glyphs de DOS colores -> colores originales, sin tinte
-  if (cfg.help_icons != "none") {
-    std::filesystem::path help = cfg.icons_dir / "help" / cfg.help_icons;
+if (cfg.help_icons != HelpIcons::None) {
+    std::filesystem::path help = cfg.icons_dir / "help" / helpIconsToString(cfg.help_icons);
     ic.nav_v = load(help / "d_updown.svg", help_sz, false);
     ic.nav_h = load(help / "d_leftright.svg", help_sz, false);
     ic.accept = load(help / "b_south.svg", help_sz, false);

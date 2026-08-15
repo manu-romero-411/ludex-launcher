@@ -6,6 +6,41 @@
 #include <iostream>
 #include <unistd.h>
 
+// --- Conversiones string <-> enum ---
+LayoutSide parseSide(const std::string& s) {
+    if (s == "right") return LayoutSide::Right;
+    if (s == "top")   return LayoutSide::Top;
+    if (s == "bottom") return LayoutSide::Bottom;
+    return LayoutSide::Left;
+}
+std::string sideToString(LayoutSide v) {
+    switch (v) {
+    case LayoutSide::Right: return "right";
+    case LayoutSide::Top:   return "top";
+    case LayoutSide::Bottom: return "bottom";
+    default:                return "left";
+    }
+}
+Theme parseTheme(const std::string& s) {
+    if (s == "light") return Theme::Light;
+    return Theme::Dark;
+}
+std::string themeToString(Theme v) {
+    return v == Theme::Light ? "light" : "dark";
+}
+HelpIcons parseHelpIcons(const std::string& s) {
+    if (s == "playstation") return HelpIcons::PlayStation;
+    if (s == "none")        return HelpIcons::None;
+    return HelpIcons::Xbox;
+}
+std::string helpIconsToString(HelpIcons v) {
+    switch (v) {
+    case HelpIcons::PlayStation: return "playstation";
+    case HelpIcons::None:        return "none";
+    default:                     return "xbox";
+    }
+}
+
 /* ------------------------------------------------------------------
  * Valores por defecto. Se aplican SOLO cuando el INI no existe o le
  * falta una clave. Nunca viven en el struct Config (el header está
@@ -81,11 +116,9 @@ bool Config::load(const std::filesystem::path &path) {
   font_bold = ini.get(S, "font_bold", defaults::fontBold());
 
   // Layout
-  side = ini.get(S, "side", side);
-  if (side != "left" && side != "right" && side != "top" && side != "bottom") {
-    side = "left";
-  }
-  visible_items = ini.getInt(S, "visible_items", visible_items);
+side = parseSide(ini.get(S, "side", sideToString(side)));
+theme = parseTheme(ini.get(S, "theme", themeToString(theme)));
+help_icons = parseHelpIcons(ini.get(S, "help_icons", helpIconsToString(help_icons)));  visible_items = ini.getInt(S, "visible_items", visible_items);
   menu_h_pct = ini.getFloat(S, "menu_h_pct", menu_h_pct);
   icon_pct = ini.getFloat(S, "icon_pct", icon_pct);
   icon_sel_pct = ini.getFloat(S, "icon_sel_pct", icon_sel_pct);
@@ -102,8 +135,6 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getFloat(S, "wallpaper_ken_burns_zoom", wallpaper_ken_burns_zoom);
   wallpaper_fade_duration =
       ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
-  theme = ini.get(S, "theme", theme); // load
-  help_icons = ini.get(S, "help_icons", help_icons);
 
   music_dir = ini.get(S, "music_dir", "");
 
@@ -112,9 +143,6 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getInt(S, "wallpaper_rotate", wallpaper_rotate ? 1 : 0) != 0;
   all_players_ui =
       ini.getInt(S, "all_players_ui", all_players_ui ? 1 : 0) != 0; // load
-  if (help_icons != "xbox" && help_icons != "playstation" &&
-      help_icons != "none")
-    help_icons = "xbox";
   for (int i = 0; i < MAX_PLAYERS; ++i) {
     std::string k = "p" + std::to_string(i + 1);
     controller_guid[i] = ini.get("controllers", k + "_guid", "");
@@ -253,3 +281,5 @@ Config loadConfig() {
   cfg.load(path);
   return cfg;
 }
+
+

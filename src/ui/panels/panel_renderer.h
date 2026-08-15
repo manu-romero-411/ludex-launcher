@@ -1,4 +1,3 @@
-// src/ui/panels/panel_renderer.h
 #pragma once
 #include "panel_types.h"
 
@@ -10,5 +9,14 @@ void drawGenericPanel(
     ShellState& st,
     Config& cfg,
     const ShellActions& actions);
+
+// Procesa una acción de input sobre un panel.
+// Se llama desde panelInput() / controllersInput().
+void handlePanelAction(
+    const PanelSpec& spec,
+    ShellState& st,
+    Config& cfg,
+    const ShellActions& actions,
+    UiAction a);
 
 } // namespace ui::panels

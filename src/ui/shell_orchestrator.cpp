@@ -41,7 +41,7 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   // --- Wallpaper ---
   bool has_wp = !state.wallpapers.empty() && state.wp_current >= 0;
   if (has_wp) {
-    bool light = (cfg.theme == "light");
+    bool light = isLight(cfg.theme);
     ImU32 overlay_dark = IM_COL32(0, 0, 0, 90);
     ImU32 overlay_light = IM_COL32(255, 255, 255, 80);
     ImU32 overlay = light ? overlay_light : overlay_dark;
@@ -64,7 +64,7 @@ void drawShellImGui(ShellState &state, const Config &cfg,
     }
     dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H), overlay);
   } else {
-    bool light = (cfg.theme == "light");
+    bool light = isLight(cfg.theme);
     dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
                       light ? IM_COL32(245, 245, 245, 255)
                             : IM_COL32(18, 18, 20, 255));
@@ -95,9 +95,9 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   }
 
   // --- Widgets de HUD ---
-  bool horizontal = (cfg.side == "top" || cfg.side == "bottom");
-  bool left = (cfg.side == "left");
-  bool top = (cfg.side == "top");
+  bool horizontal = isHorizontal(cfg.side);
+  bool left = (cfg.side == LayoutSide::Left);
+  bool top = (cfg.side == LayoutSide::Top);
   bool clock_bottom = horizontal && top;
   g_clock.draw(cfg, vp, left, clock_bottom);
 

@@ -1,6 +1,7 @@
 // src/ui/panels/panel_renderer.cpp (función simplificada)
 #include "panel_renderer.h"
 #include "../ui_common.h"
+#include "config.h"
 #include <algorithm>
 #include <imgui.h>
 
@@ -29,7 +30,7 @@ Layout computeLayout(int list_count, const Config &cfg) {
   Layout L{};
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
-  bool light = (cfg.theme == "light");
+  bool light = isLight(cfg.theme);
 
   L.fade_col = light ? IM_COL32(240, 240, 240, 210) : IM_COL32(0, 0, 0, 210);
   L.panel_bg = light ? IM_COL32(250, 250, 252, 250) : IM_COL32(30, 32, 40, 250);
@@ -153,5 +154,44 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
   }
   ImGui::PopFont();
 }
+void handlePanelAction(
+    const PanelSpec& spec,
+    ShellState& st,
+    Config& cfg,
+    const ShellActions& actions,
+    UiAction a)
+{
+    if (spec.rows.empty() || !spec.focus_ptr) return;
 
+    const int count = (int)spec.rows.size();
+    int& focus = *spec.focus_ptr;
+    focus = std::clamp(focus, 0, count - 1);
+
+    const auto& row = spec.rows[focus];
+
+    switch (a) {
+    case UiAction::Up:
+        focus = (focus - 1 + count) % count;
+        break;
+    case UiAction::Down:
+        focus = (focus + 1) % count;
+        break;
+    case UiAction::Left:
+        if (row.adjust) row.adjust(cfg, -1);
+        break;
+    case UiAction::Right:
+        if (row.adjust) row.adjust(cfg, +1);
+        break;
+    case UiAction::Select:
+        if (row.on_select) row.on_select(st, cfg, actions);
+        else if (row.adjust) row.adjust(cfg, +1);
+        break;
+    case UiAction::Back:
+    case UiAction::Guide:
+        if (spec.on_back) spec.on_back(st, cfg);
+        break;
+    default:
+        break;
+    }
+}
 } // namespace ui::panels

@@ -1,5 +1,10 @@
 #include "input_manager.h"
 #include "shell_state.h"
+#include "ui_input_handlers.h"
+#include "panels/pan_settings.h"
+#include "panels/pan_shutdown.h"
+#include "panels/panel_renderer.h"
+
 
 void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a) {
     if (!st.show_controllers) return;
@@ -59,10 +64,11 @@ void controllersInput(ShellState& st, Config& cfg, const ShellActions& actions, 
 }
 
 void panelInput(ShellState& st, Config& cfg, const ShellActions& actions, UiAction a) {
-    bool settings = st.show_settings;
-    if (!settings && !st.show_power) return;
-
-    // Este handler ahora es manejado por drawGenericPanel internamente
-    // Solo necesitamos manejar navegación si el panel no está consumiendo el input
-    // Por simplicidad, dejamos que el panel_renderer maneje todo el input
+    if (st.show_settings) {
+        auto spec = ui::panels::makeSettingsPanelSpec(st, cfg, actions);
+        ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+    } else if (st.show_power) {
+        auto spec = ui::panels::makeShutdownPanelSpec(st, actions);
+        ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+    }
 }

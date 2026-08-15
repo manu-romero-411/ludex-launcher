@@ -316,9 +316,9 @@ void Application::handleKeyboard(const SDL_Event& e) {
 void Application::handleMouseDrag(const SDL_Event& e) {
     static constexpr float DRAG_THRESHOLD = 12.0f;
 
-    auto axisPos = [this](float px, float py) -> float {
-        return (cfg_.side == "left" || cfg_.side == "right") ? py : px;
-    };
+auto axisPos = [this](float px, float py) -> float {
+    return isHorizontal(cfg_.side) ? px : py;
+};
     auto startDragState = [this, &axisPos](float px, float py) {
         float pos = axisPos(px, py);
         shell_.drag_start_pos = pos;
@@ -330,8 +330,7 @@ void Application::handleMouseDrag(const SDL_Event& e) {
     };
     auto doDrag = [this, &axisPos](float px, float py) {
         float pos = axisPos(px, py);
-        float main_axis = (cfg_.side == "top" || cfg_.side == "bottom") ? (float)sw_ : (float)sh_;
-        float slot_size = main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
+float main_axis = isHorizontal(cfg_.side) ? (float)sw_ : (float)sh_;        float slot_size = main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
 
         float delta_px = pos - shell_.drag_start_pos;
         shell_.offset = shell_.drag_start_offset - delta_px / slot_size;
@@ -383,9 +382,9 @@ void Application::handleMouseDrag(const SDL_Event& e) {
 void Application::handleTouchDrag(const SDL_Event& e) {
     static constexpr float DRAG_THRESHOLD = 12.0f;
 
-    auto axisPos = [this](float px, float py) -> float {
-        return (cfg_.side == "left" || cfg_.side == "right") ? py : px;
-    };
+auto axisPos = [this](float px, float py) -> float {
+    return isHorizontal(cfg_.side) ? px : py;
+};
     auto startDragState = [this, &axisPos](float px, float py) {
         float pos = axisPos(px, py);
         shell_.drag_start_pos = pos;
@@ -397,8 +396,7 @@ void Application::handleTouchDrag(const SDL_Event& e) {
     };
     auto doDrag = [this, &axisPos](float px, float py) {
         float pos = axisPos(px, py);
-        float main_axis = (cfg_.side == "top" || cfg_.side == "bottom") ? (float)sw_ : (float)sh_;
-        float slot_size = main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
+float main_axis = isHorizontal(cfg_.side) ? (float)sw_ : (float)sh_;        float slot_size = main_axis / ((float)(cfg_.visible_items - 1) + cfg_.tile_sel_ratio);
 
         float delta_px = pos - shell_.drag_start_pos;
         shell_.offset = shell_.drag_start_offset - delta_px / slot_size;
@@ -461,33 +459,21 @@ void Application::handleAction(UiAction a) {
     
     switch (a) {
     case UiAction::Left:
-        if (shell_.menu_open) shell_.navMenu(-1);
-        else if (cfg_.side == "top" || cfg_.side == "bottom") {
-            shell_.nav(-1);
-            audio_.playScrollSound();
-        }
-        break;
-    case UiAction::Right:
-        if (shell_.menu_open) shell_.navMenu(1);
-        else if (cfg_.side == "top" || cfg_.side == "bottom") {
-            shell_.nav(1);
-            audio_.playScrollSound();
-        }
-        break;
-    case UiAction::Up:
-        if (shell_.menu_open) shell_.navMenu(-1);
-        else if (cfg_.side == "left" || cfg_.side == "right") {
-            shell_.nav(-1);
-            audio_.playScrollSound();
-        }
-        break;
-    case UiAction::Down:
-        if (shell_.menu_open) shell_.navMenu(1);
-        else if (cfg_.side == "left" || cfg_.side == "right") {
-            shell_.nav(1);
-            audio_.playScrollSound();
-        }
-        break;
+    if (shell_.menu_open) shell_.navMenu(-1);
+    else if (isHorizontal(cfg_.side)) { shell_.nav(-1); audio_.playScrollSound(); }
+    break;
+case UiAction::Right:
+    if (shell_.menu_open) shell_.navMenu(1);
+    else if (isHorizontal(cfg_.side)) { shell_.nav(1); audio_.playScrollSound(); }
+    break;
+case UiAction::Up:
+    if (shell_.menu_open) shell_.navMenu(-1);
+    else if (!isHorizontal(cfg_.side)) { shell_.nav(-1); audio_.playScrollSound(); }
+    break;
+case UiAction::Down:
+    if (shell_.menu_open) shell_.navMenu(1);
+    else if (!isHorizontal(cfg_.side)) { shell_.nav(1); audio_.playScrollSound(); }
+    break;
     case UiAction::Select:
         audio_.playSelectSound();
         if (shell_.menu_open) {

@@ -13,9 +13,8 @@ void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& 
     if (state.menu_anim <= 0.001f) return;
 
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    bool left = (cfg.side == "left" || cfg.side == "bottom");
-    bool light = (cfg.theme == "light");
-
+bool left = (cfg.side == LayoutSide::Left) || (cfg.side == LayoutSide::Bottom);
+bool light = isLight(cfg.theme);
     ImU32 row_normal = light ? IM_COL32(230, 232, 240, 255) : IM_COL32(32, 32, 36, 255);
     ImU32 row_focus  = light ? IM_COL32(200, 210, 230, 255) : IM_COL32(74, 74, 80, 255);
     ImU32 text_col   = light ? IM_COL32(25, 25, 30, 255)    : IM_COL32(230, 230, 230, 255);
@@ -41,7 +40,7 @@ void SystemMenu::draw(ShellState& state, const Config& cfg, const ShellActions& 
             bool hovered = ImGui::IsItemHovered();
             bool active  = ImGui::IsItemActive();
 
-            if (ImGui::IsItemClicked()) {
+            if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 state.menu_selected = m;
                 if (m == 0) {
                     actions.open_settings();
