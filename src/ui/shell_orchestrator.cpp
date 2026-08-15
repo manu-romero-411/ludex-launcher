@@ -12,7 +12,6 @@
 #include "widgets/help_hints.h"
 #include "widgets/player_indicators.h"
 #include "widgets/tile_carousel.h"
-#include "widgets/wallpaper.h"
 #include <imgui.h>
 
 namespace {
@@ -40,37 +39,15 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   ImGui::Begin("##ludex", nullptr, flags);
   ImDrawList *dl = ImGui::GetWindowDrawList();
 
-  // --- Wallpaper ---
-  bool has_wp = !state.wallpapers.empty() && state.wp_current >= 0;
-  if (has_wp) {
-    bool light = isLight(cfg.theme);
-    ImU32 overlay_dark = IM_COL32(0, 0, 0, 90);
-    ImU32 overlay_light = IM_COL32(255, 255, 255, 80);
-    ImU32 overlay = light ? overlay_light : overlay_dark;
-
-    if (state.wp_in_transition && state.wp_next >= 0) {
-      float raw = state.wp_fade;
-      float f = raw * raw * (3.0f - 2.0f * raw);
-      int a_cur = (int)(255 * f);
-      int a_nxt = (int)(255 * (1.0f - f));
-      ImU32 tint_cur = IM_COL32(255, 255, 255, a_cur);
-      ImU32 tint_nxt = IM_COL32(255, 255, 255, a_nxt);
-      ui::widgets::drawWallpaperLayer(
-          dl, W, H, state.wallpapers[state.wp_current], tint_cur);
-      ui::widgets::drawWallpaperLayer(dl, W, H, state.wallpapers[state.wp_next],
-                                      tint_nxt);
+      // --- Wallpaper ---
+    if (state.wallpapers.hasWallpaper()) {
+        state.wallpapers.draw(dl, W, H, cfg);
     } else {
-      ui::widgets::drawWallpaperLayer(dl, W, H,
-                                      state.wallpapers[state.wp_current],
-                                      IM_COL32(255, 255, 255, 255));
+        bool light = isLight(cfg.theme);
+        dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
+                          light ? IM_COL32(245, 245, 245, 255)
+                                : IM_COL32(18, 18, 20, 255));
     }
-    dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H), overlay);
-  } else {
-    bool light = isLight(cfg.theme);
-    dl->AddRectFilled(ImVec2(0, 0), ImVec2(W, H),
-                      light ? IM_COL32(245, 245, 245, 255)
-                            : IM_COL32(18, 18, 20, 255));
-  }
 
   // --- Componentes principales ---
   g_edge_fades.draw(cfg, W, H);

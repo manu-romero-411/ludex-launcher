@@ -281,7 +281,7 @@ int Application::run() {
     if (!shell_.show_settings && !shell_.show_power &&
         !shell_.show_controllers && !shell_.show_bluetooth &&
         !shell_.show_bluetooth_scan) {
-      shell_.update(dt, cfg_);
+      shell_.update(dt, cfg_, *renderer_, sw_, sh_);
     }
 
     audio_.update();
@@ -324,11 +324,12 @@ int Application::run() {
       }
     }
 
-    shell_.updatePanelAnimation(dt);
     renderer_->beginFrame();
+    shell_.icon_cache.beginFrame();
     renderer_->drawShell(shell_, cfg_, actions_);
     renderAppFade();
     renderer_->endFrame();
+    shell_.icon_cache.evict(8);
   }
   return 0;
 }
@@ -414,31 +415,20 @@ void Application::handleKeyboard(const SDL_Event &e) {
   case SDLK_HOME:
     handleAction(UiAction::Guide);
     break;
-  case SDLK_F5:
-    backends_.loadAll();
-    shell_.refresh(cfg_, backends_);
-    {
-      int icon_max = (int)(sh_ * cfg_.icon_sel_pct * 2.0f);
-      for (auto &app : shell_.apps) {
-        if (!app.icon_path.empty() && !app.icon_texture) {
-          app.icon_texture =
-              TexturePtr(renderer_->loadTextureFromFile(
-                             app.icon_path, nullptr, nullptr, icon_max,
-                             app.has_icon_tint ? &app.icon_tint : nullptr),
-                         TextureDeleter{renderer_.get()});
-        }
-      }
-    }
-    break;
+        case SDLK_F5:
+            backends_.loadAll();
+            shell_.refresh(cfg_, backends_);
+            break;
   case SDLK_x:
     handleAction(UiAction::Alt);
     break;
-  case SDLK_w:
-    shell_.nextWallpaper();
-    break;
-  case SDLK_F6:
-    loadAllWallpapers(*renderer_, shell_, cfg_, sw_, sh_);
-    break;
+        case SDLK_w:
+            shell_.nextWallpaper(*renderer_, sw_, sh_);
+            break;
+        case SDLK_F6:
+            shell_.wallpapers.discover(cfg_);
+            shell_.wallpapers.loadInitial(*renderer_, sw_, sh_);
+            break;
   default:
     break;
   }

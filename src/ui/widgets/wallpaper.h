@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include "../shell/shell_state.h"
+#include "../render/wallpaper_manager.h"
 
 namespace ui::widgets {
 

@@ -74,9 +74,15 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
   }
 
   bool accept_tile_input = !panel_open;
-  
+
   for (const Row &row : rows) {
     const App &app = state.apps[row.idx];
+    // Icono bajo demanda desde la caché
+    void *icon_tex = nullptr;
+    if (!app.icon_path.empty()) {
+      icon_tex = state.icon_cache.get(
+          app.icon_path, app.has_icon_tint ? &app.icon_tint : nullptr);
+    }
     float t = smooth(std::clamp(1.0f - std::fabs(row.d), 0.0f, 1.0f));
     float h_i = row.h;
     float w_i = flerp(cross_un, cross_sel, t);
@@ -167,17 +173,16 @@ void TileCarousel::draw(ShellState &state, const Config &cfg,
         label_y = y0 + w_i * 0.95f - ts.y;
         icon_y = y0 + (label_y - y0 - isz) * 0.5f;
       }
-      if (app.icon_texture) {
-        dl->AddImage((ImTextureID)app.icon_texture.get(),
-                     ImVec2(icon_x, icon_y),
+      if (icon_tex) {
+        dl->AddImage((ImTextureID)icon_tex, ImVec2(icon_x, icon_y),
                      ImVec2(icon_x + isz, icon_y + isz));
       }
       dl->AddText(g_font_tile, fs, ImVec2(label_x, label_y), label_col,
                   label.c_str());
     } else {
-      if (app.icon_texture) {
+      if (icon_tex) {
         ImVec2 imin(x0 + pad, row.main_pos - isz * 0.5f);
-        dl->AddImage((ImTextureID)app.icon_texture.get(), imin,
+        dl->AddImage((ImTextureID)icon_tex, imin,
                      ImVec2(imin.x + isz, imin.y + isz));
       }
       dl->AddText(g_font_tile, fs,
