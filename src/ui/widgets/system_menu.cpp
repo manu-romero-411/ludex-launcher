@@ -24,18 +24,21 @@ void SystemMenu::draw(ShellState &state, const Config &cfg,
   ImU32 text_col =
       light ? IM_COL32(25, 25, 30, 255) : IM_COL32(230, 230, 230, 255);
 
+  // # of elements that will be displayed
+  const int numElements = 5;
+
   float menu_h = H * cfg.menu_h_pct;
   float menu_w = W * cfg.tile_sel_w_pct;
-  float total = menu_h * 4.0f;
+  float total = menu_h * numElements * 1.0f;
   float y_base = H - total * state.menu_anim;
 
-  static const char *labels[5] = {"SETTINGS", "BLUETOOTH", "CONTROLLERS",
+  static const char *labels[numElements] = {"SETTINGS", "BLUETOOTH", "CONTROLLERS",
                                   "QUIT TO DESKTOP", "SHUTDOWN..."};
-  void *icons[5] = {state.ui_icons.settings.get(),
-                    state.ui_icons.gamepad.get(), // TODO: icono bluetooth
+  void *icons[numElements] = {state.ui_icons.settings.get(),
+                                      state.ui_icons.bluetooth.get(),
                     state.ui_icons.gamepad.get(), state.ui_icons.exit.get(),
                     state.ui_icons.shutdown.get()};
-  for (int m = 0; m < 4; ++m) {
+  for (int m = 0; m < numElements; ++m) {
     float y0 = y_base + m * menu_h;
     ImVec2 min(left ? 0.0f : W - menu_w, y0);
     ImVec2 max(min.x + menu_w, y0 + menu_h);

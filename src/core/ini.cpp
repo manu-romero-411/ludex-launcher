@@ -81,13 +81,7 @@ int Ini::getInt(const std::string &s, const std::string &k, int def) const {
 float Ini::getFloat(const std::string &s, const std::string &k,
                     float def) const {
   std::string v = get(s, k);
-  if (v.empty())
-    return def;
-  try {
-    return std::stof(v);
-  } catch (...) {
-    return def;
-  }
+  return util::stringToFloat(v, def);
 }
 
 void Ini::set(const std::string &s, const std::string &k,

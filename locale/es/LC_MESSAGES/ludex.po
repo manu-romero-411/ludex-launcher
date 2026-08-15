@@ -1,0 +1,22 @@
+msgid ""
+msgstr ""
+"Language: es\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "SETTINGS"
+msgstr "AJUSTES"
+
+msgid "CONTROLLERS"
+msgstr "MANDOS"
+
+msgid "QUIT TO DESKTOP"
+msgstr "SALIR AL ESCRITORIO"
+
+msgid "SHUTDOWN..."
+msgstr "APAGAR..."
+
+msgid "NAVIGATE"
+msgstr "NAVEGAR"
+
+msgid "BACK"
+msgstr "ATRÁS"

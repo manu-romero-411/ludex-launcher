@@ -6,6 +6,8 @@ PanelSpec makeShutdownPanelSpec(ShellState& st, const ShellActions& actions) {
     PanelSpec spec;
     spec.title = "SHUTDOWN...";
     spec.focus_ptr = &st.power_focus;
+    spec.scroll_ptr = &st.settings_scroll;
+
     spec.on_back = [](ShellState& s, Config&) { s.show_power = false; };
 
     spec.rows = {

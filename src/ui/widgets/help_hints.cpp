@@ -1,6 +1,7 @@
 #include "help_hints.h"
 #include "../ui_common.h"
 #include <algorithm>
+#include "../../core/i18n.h"
 
 namespace ui::widgets {
 
@@ -19,33 +20,46 @@ void HelpHints::draw(const ShellState &state, const Config &cfg,
   };
 
   bool horiz = isHorizontal(cfg.side);
-  std::vector<Seg> segs;
 
-  if (state.show_settings) {
-    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
-            {ic.nav_h.get(), "LEFT/RIGHT", "CHANGE"},
-            {ic.accept.get(), "A", "OK"},
-            {ic.back.get(), "B", "BACK"}};
-  } else if (state.show_controllers) {
-    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
-            {ic.nav_h.get(), "LEFT/RIGHT", "CHANGE"},
-            {ic.accept.get(), "A", "OK"},
-            {ic.back.get(), "B", "BACK"}};
-  } else if (state.show_power) {
-    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
-            {ic.accept.get(), "A", "ACCEPT"},
-            {ic.back.get(), "B", "BACK"}};
-  } else if (state.menu_open) {
-    segs = {{ic.nav_v.get(), "UP/DOWN", "NAVIGATE"},
-            {ic.accept.get(), "A", "ACCEPT"},
-            {ic.back.get(), "B / HOME", "CLOSE"}};
-  } else {
+std::vector<Seg> segs;
+if (state.show_settings) {
+    segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+            {ic.nav_h.get(), "LEFT/RIGHT", _("CHANGE")},
+            {ic.accept.get(), "A", _("OK")},
+            {ic.back.get(), "B", _("BACK")}};
+} else if (state.show_controllers) {
+    if (state.controller_pick_player >= 0) {   // modo asignación
+        segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+                {ic.accept.get(), "A", _("ASSIGN")},
+                {ic.back.get(), "B", _("CANCEL")}};
+    } else {
+        segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+                {ic.accept.get(), "A", _("SELECT")},
+                {ic.back.get(), "B", _("BACK")}};
+    }
+} else if (state.show_power) {
+    segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+            {ic.accept.get(), "A", _("ACCEPT")},
+            {ic.back.get(), "B", _("BACK")}};
+} else if (state.show_bluetooth_scan) {
+    segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+            {ic.accept.get(), "A", _("PAIR")},
+            {ic.back.get(), "B", _("BACK")}};
+} else if (state.show_bluetooth) {
+    segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+            {ic.accept.get(), "A", _("CONNECT")},
+            {ic.back.get(), "B", _("BACK")}};
+} else if (state.menu_open) {
+    segs = {{ic.nav_v.get(), "UP/DOWN", _("NAVIGATE")},
+            {ic.accept.get(), "A", _("ACCEPT")},
+            {ic.back.get(), "B / HOME", _("CLOSE")}};
+} else {
     segs = {{horiz ? ic.nav_h.get() : ic.nav_v.get(),
-             horiz ? "LEFT/RIGHT" : "UP/DOWN", "NAVIGATE"},
-            {ic.accept.get(), "A", "SELECT"},
-            {ic.back.get(), "B", "BACK"},
-            {ic.home.get(), "HOME", "SYSTEM MENU"}};
-  }
+             horiz ? "LEFT/RIGHT" : "UP/DOWN", _("NAVIGATE")},
+            {ic.accept.get(), "A", _("SELECT")},
+            {ic.back.get(), "B", _("BACK")},
+            {ic.home.get(), "HOME", _("SYSTEM MENU")}};
+}
 
   ImGui::PushFont(ui::g_font_hint);
   float gap_seg = W * 0.014f;

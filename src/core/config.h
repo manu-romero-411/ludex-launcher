@@ -66,6 +66,7 @@ struct Config {
     std::string controller_guid[MAX_PLAYERS];
     std::string controller_name[MAX_PLAYERS];
     std::filesystem::path music_dir;
+    std::string language = "en";
 };
 
 Config loadConfig();

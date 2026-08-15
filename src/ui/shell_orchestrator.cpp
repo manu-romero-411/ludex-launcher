@@ -27,8 +27,9 @@ void drawShellImGui(ShellState &state, const Config &cfg,
                     const ShellActions &actions) {
   const ImGuiViewport *vp = ImGui::GetMainViewport();
   float W = vp->WorkSize.x, H = vp->WorkSize.y;
-  bool panel_open =
-      state.show_settings || state.show_power || state.show_controllers;
+bool panel_open = state.show_settings || state.show_power ||
+                  state.show_controllers || state.show_bluetooth ||
+                  state.show_bluetooth_scan;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::SetNextWindowPos(vp->WorkPos);
@@ -94,9 +95,6 @@ void drawShellImGui(ShellState &state, const Config &cfg,
   } else if (state.show_bluetooth_scan) {
     auto spec =
         ui::panels::makeBluetoothScanPanelSpec(state, mutable_cfg, actions);
-    ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
-  } else if (state.show_bluetooth) {
-    auto spec = ui::panels::makeBluetoothPanelSpec(state, mutable_cfg, actions);
     ui::panels::drawGenericPanel(spec, state, mutable_cfg, actions);
   } else {
     if (state.menu_anim > 0.001f) {

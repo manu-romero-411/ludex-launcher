@@ -8,6 +8,7 @@ PanelSpec makeSettingsPanelSpec(ShellState &st, Config &cfg,
   PanelSpec spec;
   spec.title = "SETTINGS";
   spec.focus_ptr = &st.settings_focus;
+  spec.scroll_ptr = &st.settings_scroll;
   spec.on_back = [](ShellState &s, Config &c) {
     c.save(c.ini_path);
     s.show_settings = false;

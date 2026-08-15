@@ -14,7 +14,7 @@ struct WallpaperLayer {
   float kb_pan_x = 0.0f, kb_pan_y = 0.0f;
 };
 
-enum class RowIcon { None, Settings, Exit, Shutdown, Restart, Suspend };
+enum class RowIcon { None, Settings, Exit, Shutdown, Restart, Suspend, Bluetooth, Headset, Gamepad, Gear };
 
 struct UiIcons {
   TexturePtr settings;
@@ -28,6 +28,9 @@ struct UiIcons {
   TexturePtr back;
   TexturePtr home;
   TexturePtr gamepad;
+  TexturePtr bluetooth;
+  TexturePtr gear;
+  TexturePtr headset;
 
   void *byIndex(RowIcon icon) const {
     switch (icon) {
@@ -41,6 +44,14 @@ struct UiIcons {
       return restart.get();
     case RowIcon::Suspend:
       return suspend.get();
+    case RowIcon::Bluetooth:
+      return bluetooth.get();
+    case RowIcon::Gear:
+      return gear.get();
+    case RowIcon::Headset:
+      return headset.get();
+    case RowIcon::Gamepad:
+      return gamepad.get();
     default:
       return nullptr;
     }
@@ -115,6 +126,11 @@ struct ShellState {
   int bluetooth_focus = 0;
   bool show_bluetooth_scan = false;
   int bluetooth_scan_focus = 0;
+  float settings_scroll = 0.0f;
+  float power_scroll = 0.0f;
+  float controllers_scroll = 0.0f;
+  float bluetooth_scroll = 0.0f;
+  float bluetooth_scan_scroll = 0.0f;
 
 private:
   static constexpr float LERP_RATE = 10.0f;

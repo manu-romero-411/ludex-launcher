@@ -95,6 +95,13 @@ target_include_directories(ludex-launcher PRIVATE
     ${stb_SOURCE_DIR}
 )
 
+# Definir LOCALEDIR para gettext
+# Si estás probando en local, usa CMAKE_CURRENT_SOURCE_DIR. 
+# Si vas a empaquetar/instalar, cámbialo a CMAKE_INSTALL_PREFIX/share/locale
+target_compile_definitions(ludex-launcher PRIVATE 
+    LOCALEDIR="${CMAKE_CURRENT_SOURCE_DIR}/locale"
+)
+
 target_link_libraries(ludex-launcher PRIVATE
     imgui
     PkgConfig::SDL2

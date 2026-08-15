@@ -152,6 +152,7 @@ bool Config::load(const std::filesystem::path &path) {
       ini.getFloat(S, "wallpaper_fade_duration", wallpaper_fade_duration);
 
   music_dir = ini.get(S, "music_dir", "");
+  language = ini.get(S, "language", "");
 
   icon_vert_scale = ini.getFloat(S, "icon_vert_scale", icon_vert_scale);
   wallpaper_rotate =
@@ -223,6 +224,8 @@ bool Config::save(const std::filesystem::path &path) const {
   Ini ini;
   const std::string S = "ludex-launcher";
 
+  if (!language.empty())
+    ini.set(S, "language", language);
   ini.set(S, "apps_dir", apps_dir.string());
   ini.set(S, "wallpaper_dir", wallpaper_dir.string());
   ini.set(S, "wallpaper_exts", util::joinCsv(wallpaper_exts));
@@ -235,24 +238,24 @@ bool Config::save(const std::filesystem::path &path) const {
   ini.set(S, "theme", themeToString(theme));
   ini.set(S, "help_icons", helpIconsToString(help_icons));
   ini.set(S, "visible_items", std::to_string(visible_items));
-  ini.set(S, "menu_h_pct", std::to_string(menu_h_pct));
-  ini.set(S, "icon_pct", std::to_string(icon_pct));
-  ini.set(S, "icon_sel_pct", std::to_string(icon_sel_pct));
-  ini.set(S, "font_tile_pct", std::to_string(font_tile_pct));
-  ini.set(S, "edge_fade_pct", std::to_string(edge_fade_pct));
-  ini.set(S, "edge_fade_alpha", std::to_string(edge_fade_alpha));
+  ini.set(S, "menu_h_pct", util::floatToString(menu_h_pct));
+  ini.set(S, "icon_pct", util::floatToString(icon_pct));
+  ini.set(S, "icon_sel_pct", util::floatToString(icon_sel_pct));
+  ini.set(S, "font_tile_pct", util::floatToString(font_tile_pct));
+  ini.set(S, "edge_fade_pct", util::floatToString(edge_fade_pct));
+  ini.set(S, "edge_fade_alpha", util::floatToString(edge_fade_alpha));
   ini.set(S, "active_player", std::to_string(active_player));
   ini.set(S, "show_player_indicators", show_player_indicators ? "1" : "0");
-  ini.set(S, "wallpaper_interval", std::to_string(wallpaper_interval));
+  ini.set(S, "wallpaper_interval", util::floatToString(wallpaper_interval));
   ini.set(S, "wallpaper_ken_burns", wallpaper_ken_burns ? "1" : "0");
   ini.set(S, "wallpaper_ken_burns_zoom",
-          std::to_string(wallpaper_ken_burns_zoom));
+          util::floatToString(wallpaper_ken_burns_zoom));
   ini.set(S, "wallpaper_fade_duration",
-          std::to_string(wallpaper_fade_duration));
+          util::floatToString(wallpaper_fade_duration));
   if (!icons_dir.empty())
     ini.set(S, "icons_dir", icons_dir.string());
   ini.set(S, "all_players_ui", all_players_ui ? "1" : "0");
-  ini.set(S, "icon_vert_scale", std::to_string(icon_vert_scale));
+  ini.set(S, "icon_vert_scale", util::floatToString(icon_vert_scale));
   for (int i = 0; i < MAX_PLAYERS; ++i) {
     std::string k = "p" + std::to_string(i + 1);
     ini.set("controllers", k + "_guid", controller_guid[i]);

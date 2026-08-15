@@ -3,11 +3,14 @@
 #include <string>
 #include <vector>
 
+enum class BtDeviceKind { Unknown, Gamepad, Audio };
+
 struct BluetoothDevice {
     std::string mac;
     std::string name;
     bool paired = false;
     bool connected = false;
+    BtDeviceKind kind = BtDeviceKind::Unknown;
 };
 
 class BluetoothManager {
