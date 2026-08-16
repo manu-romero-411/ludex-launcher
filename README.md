@@ -1,6 +1,6 @@
 # Ludex Launcher
 
-A modern 10-foot launcher for Linux gaming and HTPC/media centers, designed for TV screens and remote/game controllers.
+A lightweight 10-foot launcher for Linux gaming and HTPC/media centers, designed for TV screens and remote/game controllers.
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](#)
@@ -14,13 +14,13 @@ A modern 10-foot launcher for Linux gaming and HTPC/media centers, designed for 
 - **Controller-first navigation**: Optimized for D-pad/analog stick with hold-to-repeat
 - **Multiple layouts**: Vertical (left/right) or horizontal (top/bottom) drawer positioning
 - **Dynamic wallpapers**: Ken Burns effect with smooth crossfade transitions
-- **Dark/light themes**: Automatic color scheme adaptation
-- **Internationalization**: Full gettext support (Spanish included, extensible)
+- **Dark/light themes**.
+- **Internationalization support**.
 - **Touch/mouse support**: Drag gestures with momentum physics
 
 ### System Integration
 - **Multi-controller support**: Up to 8 players with individual GUID-based assignment
-- **Bluetooth management**: Built-in device pairing with PIN/passkey support
+- **Bluetooth management**: Uses `bluetoothctl` as backend.
 - **Audio system**: Background music with shuffle + UI sound effects
 - **Backend system**: Flexible app launching via configurable command templates
 - **IR remote support**: LIRC integration (compile-time option)
