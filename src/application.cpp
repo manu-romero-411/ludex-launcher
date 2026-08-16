@@ -262,6 +262,8 @@ bool Application::init() {
 
   std::vector<std::filesystem::path> music_dirs = {
       cfg_.music_dir, util::exeDir() / "music",
+      util::exeDir() / ".." /
+          "music", // <-- layout dev (build/ y build-release/)
       std::filesystem::path(std::getenv("HOME") ? std::getenv("HOME") : "") /
           ".config" / "ludex" / "music",
       std::filesystem::path("/usr/share/ludex/music")};

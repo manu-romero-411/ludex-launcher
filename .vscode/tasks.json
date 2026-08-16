@@ -1,42 +1,89 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "cmake configure",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "-S",
-                ".",
-                "-B",
-                "build",
-                "-G",
-                "Ninja",
-                "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "build",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "build"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": "cmake configure",
-            "problemMatcher": []
-        },
-        {
-            "label": "run",
-            "type": "shell",
-            "command": "./build/ludex-launcher",
-            "dependsOn": "build",
-            "problemMatcher": []
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    // ==================== DEBUG ====================
+    {
+      "label": "configure: debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        ".",
+        "-B",
+        "build",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "build: debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build"],
+      "group": { "kind": "build", "isDefault": true }, // Ctrl+Shift+B
+      "dependsOn": ["configure: debug"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: debug",
+      "type": "shell",
+      "command": "./build/ludex-launcher",
+      "dependsOn": ["build: debug"],
+      "problemMatcher": []
+    },
+
+    // ==================== RELEASE ====================
+    {
+      "label": "configure: release",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        ".",
+        "-B",
+        "build-release",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DLOCALEDIR=${input:deployPrefix}/locale"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "build: release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build-release"],
+      "dependsOn": ["configure: release"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: release",
+      "type": "shell",
+      "command": "./build-release/ludex-launcher",
+      "dependsOn": ["build: release"],
+      "problemMatcher": []
+    },
+
+    // ==================== DEPLOY ====================
+    // Réplica exacta de deploy.sh (menos el configure/build, que lo
+    // hace la cadena de dependsOn).
+    {
+      "label": "deploy: release",
+      "type": "shell",
+      "dependsOn": ["build: release"],
+      "command": "set -euo pipefail\nPREFIX='${input:deployPrefix}'\nSRC='${workspaceFolder}'\nBIN=\"$SRC/build-release/ludex-launcher\"\nstrip --strip-unneeded \"$BIN\"\ninstall -d \"$PREFIX\" \"$HOME/.local/bin\"\nrm -rf \"$PREFIX/apps\" \"$PREFIX/resources\" \"$PREFIX/backends\" \"$PREFIX/locale\"\ninstall -m 755 \"$BIN\" \"$PREFIX/.ludex-launcher.new\"\nmv -f \"$PREFIX/.ludex-launcher.new\" \"$PREFIX/ludex-launcher\"\nfor d in apps resources backends; do if [ -d \"$SRC/$d\" ]; then cp -a \"$SRC/$d\" \"$PREFIX/\"; fi; done\nif [ -d \"$SRC/build-release/locale\" ]; then cp -a \"$SRC/build-release/locale\" \"$PREFIX/\"; fi\nif [ -d \"$SRC/music\" ]; then install -d \"$PREFIX/music\"; cp -a \"$SRC/music/.\" \"$PREFIX/music/\"; fi\nln -sf \"$PREFIX/ludex-launcher\" \"$HOME/.local/bin/ludex-launcher\"\necho \"Desplegado en $PREFIX\"",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "deployPrefix",
+      "type": "promptString",
+      "description": "Directorio de instalación (PREFIX)",
+      "default": "/var/penguin/aplicaciones/ludex-launcher"
+    }
+  ]
 }
