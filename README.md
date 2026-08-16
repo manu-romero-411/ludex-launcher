@@ -6,7 +6,7 @@ A modern 10-foot launcher for Linux gaming and HTPC/media centers, designed for 
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](#)
 [![Language](https://img.shields.io/badge/C%2B%2B-20%2B-blue.svg)](#)
 
-![Ludex Launcher](screenshot.png)
+![Ludex Launcher](misc/screenshot.png)
 
 ## Features
 

@@ -166,25 +166,38 @@ std::vector<App> discoverApps(const Config &cfg,
     if (ok && !app.hidden)
       apps.push_back(std::move(app));
   }
-  // Orden: priority ASC → order_name ASC → name ASC → filename stem ASC
-  std::sort(apps.begin(), apps.end(),
-            [](const App &a, const App &b) {
-              if (a.priority != b.priority)
-                return a.priority < b.priority;
-              const std::string &oa =
-                  a.order_name.empty() ? a.name : a.order_name;
-              const std::string &ob =
-                  b.order_name.empty() ? b.name : b.order_name;
-              if (oa != ob)
-                return oa < ob;
-              if (a.name != b.name)
-                return a.name < b.name;
-              return a.webapp_path.stem().string() <
-                     b.webapp_path.stem().string();
-            });
-  return apps;
-  std::sort(apps.begin(), apps.end(),
-            [](const App &a, const App &b) { return a.name < b.name; });
+  // Orden deseado:
+  // 1) Apps con priority primero, ordenadas por priority ascendente.
+  // 2) Si no hay priority o hay empate, usar order_name.
+  //    Las apps con order_name van antes que las que no tienen.
+  // 3) Si no hay order_name o hay empate, usar nombre de archivo.
+  std::sort(apps.begin(), apps.end(), [](const App &a, const App &b) {
+    const bool a_has_priority = a.priority != 0;
+    const bool b_has_priority = b.priority != 0;
+
+    // Una app con priority va antes que una sin priority.
+    if (a_has_priority != b_has_priority)
+      return a_has_priority;
+
+    // Si ambas tienen priority, ordenar por priority.
+    if (a_has_priority && a.priority != b.priority)
+      return a.priority < b.priority;
+
+    const bool a_has_order_name = !a.order_name.empty();
+    const bool b_has_order_name = !b.order_name.empty();
+
+    // Una app con order_name va antes que una sin order_name.
+    if (a_has_order_name != b_has_order_name)
+      return a_has_order_name;
+
+    // Si ambas tienen order_name, ordenar alfabéticamente.
+    if (a_has_order_name && a.order_name != b.order_name)
+      return a.order_name < b.order_name;
+
+    // Desempate final: nombre de archivo.
+    return a.webapp_path.filename().string() <
+           b.webapp_path.filename().string();
+  });
 
   return apps;
 }
