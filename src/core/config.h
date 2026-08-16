@@ -51,8 +51,8 @@ struct Config {
     float icon_vert_scale = 0.64f;
     int active_player = 0;
     bool show_player_indicators = true;
-    float wallpaper_interval = 60.0f;
-    bool wallpaper_rotate = false;
+    float wallpaper_interval = 10.0f;
+    bool wallpaper_rotate = true;
     bool wallpaper_ken_burns = true;
     float wallpaper_ken_burns_zoom = 1.12f;
     float wallpaper_fade_duration = 2.0f;

@@ -5,9 +5,10 @@
 #include "../core/config.h"
 
 namespace ui {
-
 // Fonts globales (cargadas una vez)
-extern ImFont* g_font_tile;
+extern ImFont* g_font_tile;          // bold, tiles del carrusel
+extern ImFont* g_font_panel_title;   // bold, título de panel (más grande)
+extern ImFont* g_font_panel_row;     // regular, filas de panel
 extern ImFont* g_font_clock;
 extern ImFont* g_font_date;
 extern ImFont* g_font_hint;

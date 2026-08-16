@@ -155,11 +155,13 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
   dl->AddRectFilled(L.panel_min, ImVec2(L.panel_max.x, L.py + L.title_h),
                     L.panel_title, 10.0f, ImDrawFlags_RoundCornersTop);
 
-  ImGui::PushFont(ui::g_font_tile);
+  ImGui::PushFont(ui::g_font_panel_title);
   ImVec2 tt = ImGui::CalcTextSize(spec.title.c_str());
   dl->AddText(
+      ui::g_font_panel_title, ui::g_font_panel_title->FontSize,
       ImVec2(L.px + (L.pw - tt.x) * 0.5f, L.py + (L.title_h - tt.y) * 0.5f),
       L.text_main, spec.title.c_str());
+  ImGui::PopFont();
 
   // rueda del ratón sobre el área de contenido
   if (L.scrollable && io.MouseWheel != 0.0f &&
@@ -181,7 +183,8 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
 
     ImGui::PushID(PANEL_ID_BASE + i); // <-- CORREGIDO
     ImGui::SetCursorScreenPos(rmin);
-    ImGui::InvisibleButton("##row", ImVec2(rmax.x - rmin.x, rmax.y - rmin.y)); // <-- CORREGIDO
+    ImGui::InvisibleButton(
+        "##row", ImVec2(rmax.x - rmin.x, rmax.y - rmin.y)); // <-- CORREGIDO
 
     bool hovered = false, active = false;
     if (accept_mouse) {
@@ -196,7 +199,7 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
       }
     }
     ImGui::PopID();
-    
+
     if (active)
       dl->AddRectFilled(rmin, rmax, L.row_pressed);
     else if (i == focus)
@@ -214,19 +217,22 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
                    ImVec2(1, 1), icol);
       lx += isz + L.pad * 0.8f;
     }
+    ImGui::PushFont(ui::g_font_panel_row);
     ImVec2 lt = ImGui::CalcTextSize(row.label.c_str());
-    dl->AddText(ImVec2(lx, y0 + (L.row_h - lt.y) * 0.5f), L.text_main,
+    dl->AddText(ui::g_font_panel_row, ui::g_font_panel_row->FontSize,
+                ImVec2(lx, y0 + (L.row_h - lt.y) * 0.5f), L.text_main,
                 row.label.c_str());
-
     if (row.get_value) {
       std::string val = row.get_value(cfg);
       if (row.adjust)
         val = "<  " + val + "  >";
       ImVec2 vs = ImGui::CalcTextSize(val.c_str());
       dl->AddText(
+          ui::g_font_panel_row, ui::g_font_panel_row->FontSize,
           ImVec2(L.content_max.x - L.pad - vs.x, y0 + (L.row_h - vs.y) * 0.5f),
           L.text_val, val.c_str());
     }
+    ImGui::PopFont();
   }
   dl->PopClipRect();
 
@@ -272,10 +278,11 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     ImGui::PushID(FOOTER_ID_BASE + i);
     ImGui::SetCursorScreenPos(bmin);
     ImGui::InvisibleButton("##foot", ImVec2(bmax.x - bmin.x, bmax.y - bmin.y));
-    
+
     bool hovered = false, active = false;
     if (accept_mouse) {
-      // <-- CORREGIDO: Se eliminó el PushID e InvisibleButton duplicados que rompían el clic
+      // <-- CORREGIDO: Se eliminó el PushID e InvisibleButton duplicados que
+      // rompían el clic
       hovered = ImGui::IsItemHovered();
       active = ImGui::IsItemActive();
       if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -294,9 +301,11 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
     else if (hovered)
       dl->AddRectFilled(bmin, bmax, L.row_hover, 6.0f);
     dl->AddRect(bmin, bmax, L.border_col, 6.0f, 0, 2.0f);
-    
+
     void *ricon = st.ui_icons.byIndex(row.icon);
+    ImGui::PushFont(ui::g_font_tile);
     ImVec2 lt = ImGui::CalcTextSize(row.label.c_str());
+    ImGui::PopFont();
     float isz = bh * 0.5f;
     float gap = isz * 0.35f;
     float total_w = lt.x + (ricon ? isz + gap : 0.0f);
@@ -307,14 +316,18 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
                    ImVec2(1, 1), L.text_main);
       x += isz + gap;
     }
-    dl->AddText(ImVec2(x, bmin.y + (bh - lt.y) * 0.5f), L.text_main,
+
+    ImGui::PushFont(ui::g_font_tile);
+    ImVec2 lt2 = ImGui::CalcTextSize(row.label.c_str());
+    dl->AddText(ui::g_font_tile, ui::g_font_tile->FontSize,
+                ImVec2(x, bmin.y + (bh - lt2.y) * 0.5f), L.text_main,
                 row.label.c_str());
+    ImGui::PopFont();
   }
 
   if (spec.scroll_ptr)
     *spec.scroll_ptr = scroll;
 
-  ImGui::PopFont();
 }
 
 void handlePanelAction(const PanelSpec &spec, ShellState &st, Config &cfg,

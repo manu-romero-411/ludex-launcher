@@ -88,3 +88,26 @@ void Ini::set(const std::string &s, const std::string &k,
               const std::string &v) {
   data_[s][k] = v;
 }
+
+bool Ini::getBool(const std::string &s, const std::string &k, bool def) const {
+    std::string v = get(s, k);
+    if (v.empty())
+        return def;
+        
+    std::string lower;
+    lower.reserve(v.size());
+    for (char c : v)
+        lower += (char)std::tolower((unsigned char)c);
+        
+    if (lower == "true" || lower == "yes" || lower == "on" || lower == "1")
+        return true;
+    if (lower == "false" || lower == "no" || lower == "off" || lower == "0")
+        return false;
+        
+    // Fallback numérico por si acaso
+    try {
+        return std::stoi(v) != 0;
+    } catch (...) {
+        return def;
+    }
+}

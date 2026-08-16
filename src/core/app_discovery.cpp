@@ -112,14 +112,20 @@ static App parseWebapp(const std::filesystem::path &path, const Config &cfg,
     if (!tint_str.empty() && parseHexColor(tint_str, app.icon_tint)) {
       app.has_icon_tint = true;
     }
-    // NUEVO: leer text_color
+    // read text_color
     std::string text_color_str = ini.get(S, "text_color");
     if (!text_color_str.empty() &&
         parseHexColor(text_color_str, app.text_color)) {
       app.has_text_color = true;
     }
+
+    //  priority, order_name, hidden
+    app.priority = ini.getInt(S, "priority", 0);
+    app.order_name = ini.get(S, "order_name", "");
+    app.hidden = ini.getBool(S, "hidden", false);
+
   } else {
-    // Formato antiguo: solo una URL -> backend "webapp"
+    // old format: only url -> backend "webapp"
     app.backend = "webapp";
     app.run = util::trim(content);
     app.icon_path = resolveIcon(cfg, "", path.stem().string());
@@ -157,10 +163,26 @@ std::vector<App> discoverApps(const Config &cfg,
   for (const auto &p : entries) {
     bool ok = false;
     App app = parseWebapp(p, cfg, backends, ok);
-    if (ok)
+    if (ok && !app.hidden)
       apps.push_back(std::move(app));
   }
-
+  // Orden: priority ASC → order_name ASC → name ASC → filename stem ASC
+  std::sort(apps.begin(), apps.end(),
+            [](const App &a, const App &b) {
+              if (a.priority != b.priority)
+                return a.priority < b.priority;
+              const std::string &oa =
+                  a.order_name.empty() ? a.name : a.order_name;
+              const std::string &ob =
+                  b.order_name.empty() ? b.name : b.order_name;
+              if (oa != ob)
+                return oa < ob;
+              if (a.name != b.name)
+                return a.name < b.name;
+              return a.webapp_path.stem().string() <
+                     b.webapp_path.stem().string();
+            });
+  return apps;
   std::sort(apps.begin(), apps.end(),
             [](const App &a, const App &b) { return a.name < b.name; });
 

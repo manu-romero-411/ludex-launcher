@@ -141,11 +141,11 @@ bool Config::load(const std::filesystem::path &path) {
   edge_fade_pct = ini.getFloat(S, "edge_fade_pct", edge_fade_pct);
   edge_fade_alpha = ini.getFloat(S, "edge_fade_alpha", edge_fade_alpha);
   show_player_indicators =
-      ini.getInt(S, "show_player_indicators", show_player_indicators) != 0;
+      ini.getBool(S, "show_player_indicators", show_player_indicators);
   wallpaper_interval =
       ini.getFloat(S, "wallpaper_interval", wallpaper_interval);
   wallpaper_ken_burns =
-      ini.getInt(S, "wallpaper_ken_burns", wallpaper_ken_burns ? 1 : 0) != 0;
+      ini.getBool(S, "wallpaper_ken_burns", wallpaper_ken_burns);
   wallpaper_ken_burns_zoom =
       ini.getFloat(S, "wallpaper_ken_burns_zoom", wallpaper_ken_burns_zoom);
   wallpaper_fade_duration =
@@ -155,10 +155,9 @@ bool Config::load(const std::filesystem::path &path) {
   language = ini.get(S, "language", "");
 
   icon_vert_scale = ini.getFloat(S, "icon_vert_scale", icon_vert_scale);
-  wallpaper_rotate =
-      ini.getInt(S, "wallpaper_rotate", wallpaper_rotate ? 1 : 0) != 0;
-  all_players_ui =
-      ini.getInt(S, "all_players_ui", all_players_ui ? 1 : 0) != 0; // load
+  wallpaper_rotate = ini.getBool(S, "wallpaper_rotate", wallpaper_rotate);
+  all_players_ui = ini.getBool(S, "all_players_ui", all_players_ui);
+
   for (int i = 0; i < MAX_PLAYERS; ++i) {
     std::string k = "p" + std::to_string(i + 1);
     controller_guid[i] = ini.get("controllers", k + "_guid", "");
@@ -261,7 +260,7 @@ bool Config::save(const std::filesystem::path &path) const {
     ini.set("controllers", k + "_guid", controller_guid[i]);
     ini.set("controllers", k + "_name", controller_name[i]);
   }
-  ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "1" : "0");
+  ini.set(S, "wallpaper_rotate", wallpaper_rotate ? "true" : "false");
 
   if (!music_dir.empty()) {
     ini.set(S, "music_dir", music_dir.string());
