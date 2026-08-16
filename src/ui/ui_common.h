@@ -20,5 +20,5 @@ std::string upper(std::string s);
 ImU32 colScaled(const TileColor& c, float f, int a = 255);
 float flerp(float a, float b, float t);
 float smooth(float t);
-
+float wrapHalf(float x, int n);
 } // namespace ui

@@ -146,6 +146,10 @@ void Application::setupActions() {
     shell_.show_settings = true;
     shell_.settings_focus = 0;
   };
+  actions_.open_about = [this] {
+    shell_.show_about = true;
+    shell_.about_focus = 0;
+  };
   actions_.quit = [this] { want_quit_ = true; };
   actions_.poweroff = [] {
     launchApp({"systemctl", "poweroff"}, LaunchHooks{});
@@ -229,8 +233,15 @@ bool Application::init() {
 
   window_ = SDL_CreateWindow("ludex-launcher", SDL_WINDOWPOS_UNDEFINED,
                              SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
-                             SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP |
+                             SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP |
                                  SDL_WINDOW_ALLOW_HIGHDPI);
+
+  // Forzar el driver OpenGL (evita que SDL intente Direct3D/Metal/etc.)
+  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+
+  // descomentar si funciona mal en sandy bridge
+  // SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "1");
+
   if (!window_) {
     std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
     SDL_Quit();
@@ -376,7 +387,7 @@ int Application::run() {
         last_time_ = SDL_GetPerformanceCounter();
       }
     }
-    shell_.updatePanelAnimation(dt); 
+    shell_.updatePanelAnimation(dt);
 
     renderer_->beginFrame();
     shell_.icon_cache.beginFrame();
@@ -448,7 +459,7 @@ void Application::processEvents(float dt) {
     }
 
     handleDragEvent(event);
-        
+
     // Si cambia la lista de mandos, invalidar specs cacheados
     if (event.type == SDL_CONTROLLERDEVICEADDED ||
         event.type == SDL_CONTROLLERDEVICEREMOVED ||

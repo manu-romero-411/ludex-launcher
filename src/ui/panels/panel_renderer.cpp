@@ -226,6 +226,27 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
       std::string val = row.get_value(cfg);
       if (row.adjust)
         val = "<  " + val + "  >";
+
+      // Si el valor no cabe entre el label y el borde derecho,
+      // se trunca con "..." (respetando codepoints UTF-8).
+      const float gap = L.pad * 2.0f;
+      const float max_w = (L.content_max.x - L.pad) - (lx + lt.x + gap);
+      if (max_w > 0.0f && ImGui::CalcTextSize(val.c_str()).x > max_w) {
+        auto pop_utf8 = [](std::string &s) {
+          if (s.empty())
+            return;
+          size_t i = s.size();
+          do {
+            --i;
+          } while (i > 0 && ((unsigned char)s[i] & 0xC0) == 0x80);
+          s.resize(i);
+        };
+        while (!val.empty() &&
+               ImGui::CalcTextSize((val + "...").c_str()).x > max_w)
+          pop_utf8(val);
+        val += "...";
+      }
+
       ImVec2 vs = ImGui::CalcTextSize(val.c_str());
       dl->AddText(
           ui::g_font_panel_row, ui::g_font_panel_row->FontSize,
@@ -327,7 +348,6 @@ void drawGenericPanel(const PanelSpec &spec, ShellState &st, Config &cfg,
 
   if (spec.scroll_ptr)
     *spec.scroll_ptr = scroll;
-
 }
 
 void handlePanelAction(const PanelSpec &spec, ShellState &st, Config &cfg,

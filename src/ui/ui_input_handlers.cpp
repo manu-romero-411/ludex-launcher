@@ -6,6 +6,7 @@
 #include "panels/pan_shutdown.h"
 #include "panels/panel_renderer.h"
 #include "shell/shell_state.h"
+#include "ui/panels/pan_about.h"
 #include "ui/panels/pan_mainmenu.h"
 #include "ui/panels/pan_pin.h"
 
@@ -115,6 +116,9 @@ void panelInput(ShellState &st, Config &cfg, const ShellActions &actions,
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   } else if (st.show_power) {
     auto spec = ui::panels::makeShutdownPanelSpec(st, actions);
+    ui::panels::handlePanelAction(spec, st, cfg, actions, a);
+  } else if (st.show_about) {
+    auto spec = ui::panels::makeAboutPanelSpec(st, actions);
     ui::panels::handlePanelAction(spec, st, cfg, actions, a);
   } else if (st.show_bluetooth) {
     auto spec = ui::panels::makeBluetoothPanelSpec(st, cfg, actions);

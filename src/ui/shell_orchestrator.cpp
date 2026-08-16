@@ -5,6 +5,7 @@
 #include "panels/pan_settings.h"
 #include "panels/pan_shutdown.h"
 #include "panels/panel_renderer.h"
+#include "ui/panels/pan_about.h"
 #include "ui/panels/pan_mainmenu.h"
 #include "ui/panels/pan_pin.h"
 #include "widgets/clock.h"
@@ -45,6 +46,8 @@ ui::panels::PanelSpec buildPanelSpec(int id, ShellState &state, Config &cfg,
     return ui::panels::makeBluetoothScanPanelSpec(state, cfg, actions);
   case 6:
     return ui::panels::makeSystemPanelSpec(state, actions);
+    case 7:
+    return ui::panels::makeAboutPanelSpec(state, actions);
   default:
     return {};
   }
@@ -130,8 +133,10 @@ void drawShellImGui(ShellState &state, Config &cfg,
                       g_panel_cache.token != cache_token);
       break;
     }
-
-    default:
+case 7:  // About: estático
+    cache_token = 0;
+    need_rebuild = (g_panel_cache.panel_id != panel_id);
+    break;    default:
       break;
     }
 

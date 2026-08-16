@@ -263,6 +263,11 @@ msgstr "MANDO DEL JUGADOR {}"
 msgid "OFFLINE ({})"
 msgstr "SIN CONEXIÓN ({})"
 
+# about
+msgid "ABOUT"
+msgstr "ACERCA DE..."
+
+
 # fecha
 msgid "%A %d %B %Y"
 msgstr "%A %d de %B de %Y"

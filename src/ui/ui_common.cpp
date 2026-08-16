@@ -1,6 +1,7 @@
 #include "ui_common.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 
@@ -105,4 +106,11 @@ ImU32 colScaled(const TileColor &c, float f, int a) {
 float flerp(float a, float b, float t) { return a + (b - a) * t; }
 float smooth(float t) { return t * t * (3.0f - 2.0f * t); }
 
+float wrapHalf(float x, int n) {
+    if (n <= 0) return 0.0f;
+    float fn = (float)n;
+    float m = std::fmod(x + fn * 0.5f, fn);
+    if (m < 0.0f) m += fn;
+    return m - fn * 0.5f;
+}
 } // namespace ui

@@ -19,6 +19,7 @@ struct ShellActions {
   std::function<std::vector<InputManager::PlayerStatus>()> player_status;
   std::function<void()> reload_ui_icons;
   std::function<void()> open_controllers;
+  std::function<void()> open_about;
   std::function<void()> apply_controllers;
   std::function<std::vector<InputManager::DeviceInfo>()> devices;
 

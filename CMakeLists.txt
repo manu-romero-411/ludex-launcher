@@ -55,46 +55,47 @@ target_link_libraries(imgui PUBLIC
 )
 
 add_executable(ludex-launcher
-src/util.cpp
-src/main.cpp
-src/ui/ui_common.cpp
-src/ui/widgets/clock.cpp
-src/ui/widgets/player_indicators.cpp
-src/ui/widgets/help_hints.cpp
-src/ui/widgets/edge_fades.cpp
-src/ui/widgets/wallpaper.cpp
-src/ui/widgets/toast.cpp
-src/ui/widgets/tile_carousel.cpp
-src/ui/panels/panel_renderer.cpp
-src/ui/panels/pan_settings.cpp
-src/ui/panels/pan_shutdown.cpp
-src/ui/panels/pan_controllers.cpp
-src/ui/panels/pan_mainmenu.cpp
-src/ui/panels/pan_pin.cpp
-src/ui/panels/pan_bluetooth.cpp
-src/ui/panels/pan_bluetooth_scan.cpp
-src/ui/render/texture_handle.cpp
-src/ui/render/fade_controller.cpp
-src/ui/render/icon_cache.cpp
-src/ui/render/wallpaper_manager.cpp
-src/ui/render/renderer_sdl.cpp
-src/ui/shell/shell_state.cpp
-src/ui/assets.cpp
-src/ui/shell_orchestrator.cpp
-src/ui/ui_input_handlers.cpp
-src/audio/audio_manager.cpp
-src/input/input_manager.cpp
-src/input/ir_input.cpp
-src/input/drag_controller.cpp
-src/core/app_backends.cpp
-src/core/app_discovery.cpp
-src/core/config.cpp
-src/core/ini.cpp
-src/core/launcher.cpp
-src/core/bluetooth_manager.cpp
-src/core/app_launcher.cpp
-src/application.cpp
-
+    src/util.cpp
+    src/main.cpp
+    src/ui/ui_common.cpp
+    src/ui/widgets/clock.cpp
+    src/ui/widgets/player_indicators.cpp
+    src/ui/widgets/help_hints.cpp
+    src/ui/widgets/edge_fades.cpp
+    src/ui/widgets/wallpaper.cpp
+    src/ui/widgets/toast.cpp
+    src/ui/widgets/tile_carousel.cpp
+    src/ui/panels/panel_renderer.cpp
+    src/ui/panels/pan_settings.cpp
+    src/ui/panels/pan_shutdown.cpp
+    src/ui/panels/pan_controllers.cpp
+    src/ui/panels/pan_mainmenu.cpp
+    src/ui/panels/pan_pin.cpp
+    src/ui/panels/pan_bluetooth.cpp
+    src/ui/panels/pan_bluetooth_scan.cpp
+    src/ui/panels/pan_about.cpp
+    src/ui/render/texture_handle.cpp
+    src/ui/render/fade_controller.cpp
+    src/ui/render/icon_cache.cpp
+    src/ui/render/wallpaper_manager.cpp
+    src/ui/render/renderer_sdl.cpp
+    src/ui/shell/shell_state.cpp
+    src/ui/assets.cpp
+    src/ui/shell_orchestrator.cpp
+    src/ui/ui_input_handlers.cpp
+    src/audio/audio_manager.cpp
+    src/input/input_manager.cpp
+    src/input/ir_input.cpp
+    src/input/drag_controller.cpp
+    src/core/app_backends.cpp
+    src/core/app_discovery.cpp
+    src/core/config.cpp
+    src/core/ini.cpp
+    src/core/launcher.cpp
+    src/core/bluetooth_manager.cpp
+    src/core/app_launcher.cpp
+    src/core/system_info.cpp
+    src/application.cpp
 )
 
 # ---------------------------------------------------------------------------
@@ -247,3 +248,24 @@ else()
         "Instala el paquete: sudo apt install glslang-tools"
     )
 endif()
+# --- Build info (commit + fecha) ---
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE LUDEX_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT LUDEX_GIT_COMMIT)
+    set(LUDEX_GIT_COMMIT "unknown")
+endif()
+
+string(TIMESTAMP LUDEX_BUILD_DATE "%Y-%m-%d")
+string(TIMESTAMP LUDEX_BUILD_TIME "%H:%M:%S")
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/src/core/build_info.h.in
+    ${CMAKE_BINARY_DIR}/generated/build_info.h
+    @ONLY
+)
+include_directories(${CMAKE_BINARY_DIR}/generated)

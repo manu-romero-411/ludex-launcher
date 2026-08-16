@@ -21,6 +21,11 @@ PanelSpec makeSystemPanelSpec(ShellState &st, const ShellActions &actions) {
              s.show_system = false;
              if (actions.open_bluetooth) actions.open_bluetooth();
          }},
+         {_("ABOUT"), RowKind::Activator, RowIcon::Settings /* o un icono info */, nullptr, nullptr,
+[&actions](ShellState &s, Config &, const ShellActions &) {
+    s.show_system = false;
+    if (actions.open_about) actions.open_about();
+}},
         {_("CONTROLLERS"), RowKind::Activator, RowIcon::Gamepad, nullptr, nullptr,
          [&actions](ShellState &s, Config &, const ShellActions &) {
              s.show_system = false;
