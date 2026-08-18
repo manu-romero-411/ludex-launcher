@@ -63,7 +63,7 @@ DragEventInfo classifyDragEvent(const SDL_Event &e, int sw, int sh) {
 }
 
 } // namespace
-
+Application::Application(bool windowed) : windowed_(windowed) {}
 std::filesystem::path Application::runtimeDir() {
   if (const char *rd = std::getenv("XDG_RUNTIME_DIR"))
     return std::filesystem::path(rd) / "ludex";
@@ -215,8 +215,14 @@ bool Application::init() {
   SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "1");
   SDL_SetHint(SDL_HINT_APP_NAME, "ludex");
 
+  // Desactivamos libdecor. Wayfire maneja las decoraciones del lado del
+  // servidor (SSD). Si SDL2 intenta usar libdecor, se produce un deadlock
+  // en SDL_CreateWindow esperando un evento 'configure' que nunca llega.
+  SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR, "0");
+  // ------------------------------------------
+
   const Uint32 sdl_flags =
-      SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER;
+  SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER;
 
   if (!std::getenv("SDL_VIDEODRIVER"))
     setenv("SDL_VIDEODRIVER", "wayland", 0);
@@ -231,17 +237,27 @@ bool Application::init() {
     }
   }
 
-  window_ = SDL_CreateWindow("ludex-launcher", SDL_WINDOWPOS_UNDEFINED,
-                             SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
-                             SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP |
-                                 SDL_WINDOW_ALLOW_HIGHDPI);
+  const char *vd = SDL_GetCurrentVideoDriver();
+  const bool wayland = vd && strcmp(vd, "wayland") == 0;
+  SDL_SetHint(SDL_HINT_RENDER_DRIVER, wayland ? "opengles2" : "opengl");
+  SDL_Log("[ludex] Video driver: %s  →  Render driver: %s",
+          vd ? vd : "?", wayland ? "opengles2" : "opengl");
 
-  // Forzar el driver OpenGL (evita que SDL intente Direct3D/Metal/etc.)
-  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-
-  // descomentar si funciona mal en sandy bridge
-  // SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "1");
-
+  // FIX: SDL_WINDOWPOS_UNDEFINED a veces hace que wlroots no envíe el
+  // evento configure inicial, bloqueando SDL_CreateWindow. Usamos CENTERED.
+  // FIX: SDL_WINDOWPOS_UNDEFINED a veces hace que wlroots no envíe el
+  // evento configure inicial, bloqueando SDL_CreateWindow. Usamos CENTERED.
+  Uint32 win_flags = SDL_WINDOW_ALLOW_HIGHDPI;
+  if (windowed_) {
+    win_flags |= SDL_WINDOW_RESIZABLE;
+  }
+  
+  window_ = SDL_CreateWindow("ludex-launcher",
+                             SDL_WINDOWPOS_CENTERED,
+                             SDL_WINDOWPOS_CENTERED,
+                             windowed_ ? 1280 : 1920,
+                             windowed_ ? 720 : 1080,
+                             win_flags);
   if (!window_) {
     std::cerr << "SDL_CreateWindow error: " << SDL_GetError() << std::endl;
     SDL_Quit();
@@ -261,61 +277,70 @@ bool Application::init() {
   }
 
   std::vector<std::filesystem::path> music_dirs = {
-      cfg_.music_dir, util::exeDir() / "music",
-      util::exeDir() / ".." /
-          "music", // <-- layout dev (build/ y build-release/)
-      std::filesystem::path(std::getenv("HOME") ? std::getenv("HOME") : "") /
-          ".config" / "ludex" / "music",
-      std::filesystem::path("/usr/share/ludex/music")};
-  for (const auto &dir : music_dirs) {
-    if (std::filesystem::exists(dir)) {
-      audio_.loadMusicFromDirectory(dir);
-      break;
+    cfg_.music_dir, util::exeDir() / "music",
+    util::exeDir() / ".." /
+    "music", // <-- layout dev (build/ y build-release/)
+    std::filesystem::path(std::getenv("HOME") ? std::getenv("HOME") : "") /
+    ".config" / "ludex" / "music",
+    std::filesystem::path("/usr/share/ludex/music")};
+    for (const auto &dir : music_dirs) {
+      if (std::filesystem::exists(dir)) {
+        audio_.loadMusicFromDirectory(dir);
+        break;
+      }
     }
-  }
 
-  std::filesystem::path sounds_dir = util::exeDir() / "resources" / "sounds";
-  audio_.loadSoundEffects(sounds_dir);
-  audio_.startMusic();
+    std::filesystem::path sounds_dir = util::exeDir() / "resources" / "sounds";
+    audio_.loadSoundEffects(sounds_dir);
+    audio_.startMusic();
 
-  backends_.loadAll();
+    backends_.loadAll();
 
-  if (bluetooth_.available()) {
-    bluetooth_.requestRefresh();
-    SDL_Log("[ludex] Bluetooth available");
-  } else {
-    SDL_Log("[ludex] Bluetooth not available");
-  }
+    if (bluetooth_.available()) {
+      bluetooth_.requestRefresh();
+      SDL_Log("[ludex] Bluetooth available");
+    } else {
+      SDL_Log("[ludex] Bluetooth not available");
+    }
 
-  if (!input_.init()) {
-    SDL_DestroyWindow(window_);
-    SDL_Quit();
-    return false;
-  }
+    if (!input_.init()) {
+      SDL_DestroyWindow(window_);
+      SDL_Quit();
+      return false;
+    }
 
-  ir_ = createDefaultIrInput();
-  ir_->init();
+    ir_ = createDefaultIrInput();
+    ir_->init();
 
-  shell_.refresh(cfg_, backends_);
+    shell_.refresh(cfg_, backends_);
 
-  renderer_ = createSdlRenderer();
-  if (!renderer_->init(window_, cfg_)) {
-    std::cerr << "No se pudo inicializar el renderer" << std::endl;
-    input_.shutdown();
-    SDL_DestroyWindow(window_);
-    SDL_Quit();
-    return false;
-  }
+    renderer_ = createSdlRenderer();
+    if (!renderer_->init(window_, cfg_)) {
+      std::cerr << "No se pudo inicializar el renderer" << std::endl;
+      input_.shutdown();
+      SDL_DestroyWindow(window_);
+      SDL_Quit();
+      return false;
+    }
 
-  renderer_->getOutputSize(&sw_, &sh_);
-  loadShellAssets(*renderer_, shell_, cfg_, sw_, sh_);
-  loadUiIcons(*renderer_, shell_, cfg_, sh_);
+    // --- Fullscreen DESPUÉS de que el renderer esté operativo ---
+    renderer_->presentBlackFrame();
+    if (!windowed_) {
+      SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
+    SDL_ShowWindow(window_);
+    // descomentar si funciona mal en sandy bridge
+    // SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "1");
 
-  setupActions();
+    renderer_->getOutputSize(&sw_, &sh_);
+    loadShellAssets(*renderer_, shell_, cfg_, sw_, sh_);
+    loadUiIcons(*renderer_, shell_, cfg_, sh_);
 
-  std::vector<std::string> guids;
-  for (int i = 0; i < Config::MAX_PLAYERS; ++i)
-    guids.push_back(cfg_.controller_guid[i]);
+    setupActions();
+
+    std::vector<std::string> guids;
+    for (int i = 0; i < Config::MAX_PLAYERS; ++i)
+      guids.push_back(cfg_.controller_guid[i]);
   input_.applyAssignment(guids);
 
   running_ = true;
@@ -425,6 +450,15 @@ void Application::processEvents(float dt) {
         (event.type == SDL_WINDOWEVENT &&
          event.window.event == SDL_WINDOWEVENT_CLOSE)) {
       running_ = false;
+      continue;
+    }
+
+    // Manejar redimensionado de ventana
+    if (event.type == SDL_WINDOWEVENT &&
+        (event.window.event == SDL_WINDOWEVENT_RESIZED ||
+         event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
+      renderer_->getOutputSize(&sw_, &sh_);
+      shell_.invalidatePanels(); // recalcular layouts de paneles
       continue;
     }
 

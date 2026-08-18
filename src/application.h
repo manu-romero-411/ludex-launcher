@@ -8,8 +8,10 @@
 #include "ui/shell/shell_state.h"
 #include <SDL.h>
 #include <filesystem>
+
 class Application {
 public:
+  explicit Application(bool windowed = false);
   bool init();
   int run();
   void shutdown();
@@ -29,14 +31,14 @@ private:
   SDL_Surface *loadWindowIcon();
   std::filesystem::path runtimeDir();
 
+  bool windowed_ = false;
+
   // Servicios
   SDL_Window *window_ = nullptr;
   Config cfg_;
-
   // IMPORTANTE: renderer_ ANTES de shell_ para que
   // shell_ se destruya PRIMERO (orden inverso)
   std::unique_ptr<Renderer> renderer_;
-
   ShellState shell_;
   BackendRegistry backends_;
   InputManager input_;
@@ -45,6 +47,7 @@ private:
   DragState drag_;
   ShellActions actions_;
   BluetoothManager bluetooth_;
+
   // Fade de transición de apps
   bool app_fade_active_ = false;
   bool app_fade_in_ = true; // true = fade a negro, false = fade desde negro
